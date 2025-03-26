@@ -24,13 +24,11 @@ public class StringValidator {
     }
 
     public void validate(String input) {
-        if (input == null || input.isBlank()) {
-            if (canBeEmpty) {
-                return;
-            }
+        boolean isInputEmpty = input == null || input.isBlank();
+        if (isInputEmpty && !canBeEmpty) {
             throw new StringInvalidException(STRING_EMPTY);
         }
-        if (lengthRange.outOfRange(input.length())) {
+        if (input != null && lengthRange.outOfRange(input.length())) {
             throw new StringInvalidException(LENGTH_INVALID, lengthRange.min(), lengthRange.max());
         }
     }
