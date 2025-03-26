@@ -1,0 +1,25 @@
+package com.nexterview.server.exception;
+
+import lombok.Getter;
+
+@Getter
+public enum NexterviewErrorCode {
+
+    // Domain
+    DIALOGUE_QUESTION_INVALID("인터뷰 문답의 질문이 유효하지 않습니다: %s"),
+    DIALOGUE_ANSWER_INVALID("인터뷰 문답의 답변이 유효하지 않습니다: %s"),
+    PROMPT_TOPIC_INVALID("프롬프트 주제가 유효하지 않습니다: %s"),
+    PROMPT_INSTRUCTION_INVALID("프롬프트 지시문이 유효하지 않습니다: %s"),
+    PROMPT_QUERY_INVALID("프롬프트 질문이 유효하지 않습니다: %s"),
+    PROMPT_QUERY_NULL("프롬프트 질문은 비어 있을 수 없습니다."),
+    PROMPT_ANSWER_INVALID("프롬프트 답변이 유효하지 않습니다: %s"),
+    PROMPT_NULL("프롬프트는 비어 있을 수 없습니다."),
+    INTERVIEW_NULL("인터뷰는 비어 있을 수 없습니다."),
+    ;
+
+    private final String message;
+
+    NexterviewErrorCode(String message) {
+        this.message = message;
+    }
+}
