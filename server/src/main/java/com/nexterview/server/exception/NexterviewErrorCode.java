@@ -15,6 +15,7 @@ public enum NexterviewErrorCode {
     PROMPT_ANSWER_INVALID("프롬프트 답변이 유효하지 않습니다: %s"),
     PROMPT_NULL("프롬프트는 비어 있을 수 없습니다."),
     INTERVIEW_NULL("인터뷰는 비어 있을 수 없습니다."),
+    INTERVIEW_TITLE_INVALID("인터뷰 제목이 유효하지 않습니다: %s"),
     ;
 
     private final String message;

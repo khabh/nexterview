@@ -28,7 +28,7 @@ public class StringValidator {
         if (isInputEmpty && !canBeEmpty) {
             throw new StringInvalidException(STRING_EMPTY);
         }
-        if (input != null && lengthRange.outOfRange(input.length())) {
+        if (!isInputEmpty && lengthRange.outOfRange(input.length())) {
             throw new StringInvalidException(LENGTH_INVALID, lengthRange.min(), lengthRange.max());
         }
     }
