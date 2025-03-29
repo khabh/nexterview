@@ -16,6 +16,10 @@ public enum NexterviewErrorCode {
     PROMPT_NULL("프롬프트는 비어 있을 수 없습니다."),
     INTERVIEW_NULL("인터뷰는 비어 있을 수 없습니다."),
     INTERVIEW_TITLE_INVALID("인터뷰 제목이 유효하지 않습니다: %s"),
+    CUSTOMIZED_PROMPT_INVALID("프롬프트 질문에 대한 답변이 하나 이상 필요합니다."),
+
+    // Service
+    PROMPT_NOT_FOUND("ID가 %d인 프롬프트를 찾을 수 없습니다."),
     ;
 
     private final String message;
