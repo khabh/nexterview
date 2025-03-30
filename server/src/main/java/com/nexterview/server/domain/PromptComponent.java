@@ -9,6 +9,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class PromptComponent {
 
-    private final String question;
+    private final String query;
     private final String answer;
 }
