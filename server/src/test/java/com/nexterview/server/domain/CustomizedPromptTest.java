@@ -50,6 +50,6 @@ class CustomizedPromptTest {
 
         assertThatThrownBy(() -> CustomizedPrompt.of(prompt, promptQueries, promptAnswers))
                 .isInstanceOf(NexterviewException.class)
-                .hasMessageContaining(NexterviewErrorCode.CUSTOMIZED_PROMPT_INVALID.getMessage());
+                .hasMessageContaining(NexterviewErrorCode.PROMPT_ANSWER_REQUIRED.getMessage());
     }
 }

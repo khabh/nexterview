@@ -20,7 +20,7 @@ public class CustomizedPrompt {
 
     public CustomizedPrompt(String instruction, List<PromptComponent> promptComponents) {
         if (promptComponents == null || promptComponents.isEmpty()) {
-            throw new NexterviewException(NexterviewErrorCode.CUSTOMIZED_PROMPT_INVALID);
+            throw new NexterviewException(NexterviewErrorCode.PROMPT_ANSWER_REQUIRED);
         }
         this.instruction = instruction;
         this.promptComponents = promptComponents;
