@@ -1,8 +1,6 @@
 package com.nexterview.server.service.dto.response;
 
-import com.nexterview.server.domain.Dialogue;
 import com.nexterview.server.domain.Interview;
-import com.nexterview.server.domain.PromptAnswer;
 import java.util.List;
 
 public record InterviewDto(
@@ -12,11 +10,11 @@ public record InterviewDto(
         List<DialogueDto> dialogues
 ) {
 
-    public static InterviewDto of(Interview interview, List<PromptAnswer> promptAnswers, List<Dialogue> dialogues) {
-        List<PromptAnswerDto> promptAnswerDtos = promptAnswers.stream()
+    public static InterviewDto of(Interview interview) {
+        List<PromptAnswerDto> promptAnswerDtos = interview.getPromptAnswers().stream()
                 .map(PromptAnswerDto::of)
                 .toList();
-        List<DialogueDto> dialogueDtos = dialogues.stream()
+        List<DialogueDto> dialogueDtos = interview.getDialogues().stream()
                 .map(DialogueDto::of)
                 .toList();
 

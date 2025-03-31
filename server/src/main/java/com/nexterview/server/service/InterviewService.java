@@ -38,39 +38,44 @@ public class InterviewService {
 
         Prompt prompt = findPromptById(request.promptId());
         List<PromptQuery> queries = promptQueryRepository.findAllByPrompt(prompt);
-        List<PromptAnswer> answers = createPromptAnswers(interview, queries, request.promptAnswers());
-        if (answers.isEmpty()) {
-            throw new NexterviewException(NexterviewErrorCode.PROMPT_ANSWER_REQUIRED);
-        }
+        createPromptAnswers(interview, queries, request.promptAnswers());
 
-        List<Dialogue> dialogues = createDialogues(interview, request.dialogues());
+        createDialogues(interview, request.dialogues());
 
         interviewRepository.save(interview);
 
-        return InterviewDto.of(interview, answers, dialogues);
+        return InterviewDto.of(interview);
     }
 
 
-    private List<PromptAnswer> createPromptAnswers(
+    private void createPromptAnswers(
             Interview interview, List<PromptQuery> queries, List<PromptAnswerRequest> requests
     ) {
         Map<Long, PromptQuery> queriesById = queries.stream()
                 .collect(toMap(PromptQuery::getId, Function.identity()));
-
-        return requests.stream()
+        List<PromptAnswer> answers = requests.stream()
                 .filter(answer -> queriesById.containsKey(answer.promptQueryId()))
                 .map(answer -> new PromptAnswer(answer.answer(), queriesById.get(answer.promptQueryId()), interview))
                 .toList();
+
+        if (answers.isEmpty()) {
+            throw new NexterviewException(NexterviewErrorCode.PROMPT_ANSWER_REQUIRED);
+        }
     }
 
-    private List<Dialogue> createDialogues(Interview interview, List<DialogueRequest> requests) {
-        return requests.stream()
-                .map(dialogue -> new Dialogue(dialogue.question(), dialogue.answer(), interview))
-                .toList();
+    private void createDialogues(Interview interview, List<DialogueRequest> requests) {
+        requests.forEach(dialogue -> new Dialogue(dialogue.question(), dialogue.answer(), interview));
     }
 
     private Prompt findPromptById(Long promptId) {
         return promptRepository.findById(promptId)
                 .orElseThrow(() -> new NexterviewException(NexterviewErrorCode.PROMPT_NOT_FOUND, promptId));
+    }
+
+    public InterviewDto findById(Long interviewId) {
+        Interview interview = interviewRepository.findById(interviewId)
+                .orElseThrow(() -> new NexterviewException(NexterviewErrorCode.PROMPT_NOT_FOUND, interviewId));
+
+        return InterviewDto.of(interview);
     }
 }
