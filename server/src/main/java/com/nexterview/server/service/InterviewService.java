@@ -74,7 +74,7 @@ public class InterviewService {
 
     public InterviewDto findById(Long interviewId) {
         Interview interview = interviewRepository.findById(interviewId)
-                .orElseThrow(() -> new NexterviewException(NexterviewErrorCode.PROMPT_NOT_FOUND, interviewId));
+                .orElseThrow(() -> new NexterviewException(NexterviewErrorCode.INTERVIEW_NOT_FOUND, interviewId));
 
         return InterviewDto.of(interview);
     }
