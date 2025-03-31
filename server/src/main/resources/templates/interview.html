@@ -1,50 +1,54 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>AI 면접관</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Create Interview</title>
     <script>
+        let prompts = [];
+        let dialogues = [];
+
         document.addEventListener("DOMContentLoaded", function () {
-            fetchCategories();
+            fetchPrompts();
         });
 
-        // 카테고리 가져오기
-        async function fetchCategories() {
-            const response = await fetch("/api/prompts");
-            const categories = await response.json();
-            const categorySelect = document.getElementById("category");
+        async function fetchPrompts() {
+            if (prompts.length === 0) {
+                const response = await fetch("/api/prompts");
+                prompts = await response.json();
+            }
 
-            categorySelect.innerHTML = ""; // 초기화
-            categories.forEach(category => {
+            const categorySelect = document.getElementById("prompt");
+            categorySelect.innerHTML = "";
+
+            prompts.forEach(prompt => {
                 const option = document.createElement("option");
-                option.value = category.id;
-                option.textContent = category.name;
+                option.value = prompt.id;
+                option.textContent = prompt.topic;
                 categorySelect.appendChild(option);
             });
 
-            if (categories.length > 0) {
-                fetchPrompts(categories[0].id); // 첫 번째 카테고리에 대한 질문 불러오기
+            if (prompts.length > 0) {
+                fetchQueries(prompts[0].id);
             }
         }
 
-        // 카테고리에 따른 질문 불러오기
-        async function fetchPrompts(promptId) {
-            const response = await fetch(`/api/prompts/${promptId}/questions`);
-            const prompts = await response.json();
-            const inputFields = document.getElementById("input-fields");
-            inputFields.innerHTML = ""; // 기존 입력 필드 초기화
+        function fetchQueries(promptId) {
+            const selectedPrompt = prompts.find(prompt => prompt.id === parseInt(promptId));
+            const queries = selectedPrompt ? selectedPrompt.queries : [];
 
-            prompts.forEach(prompt => {
+            const inputFields = document.getElementById("input-fields");
+            inputFields.innerHTML = "";
+
+            queries.forEach(query => {
                 const div = document.createElement("div");
                 div.classList.add("dynamic-input");
 
                 const label = document.createElement("label");
-                label.textContent = prompt.content;
+                label.textContent = query.query;
 
                 const textarea = document.createElement("textarea");
-                textarea.name = `answer-${prompt.id}`;
-                textarea.id = `answer-${prompt.id}`;
+                textarea.name = `answer-${query.id}`;
+                textarea.id = `answer-${query.id}`;
                 textarea.rows = 3;
 
                 div.appendChild(label);
@@ -53,71 +57,95 @@
             });
         }
 
-        // 면접 질문 생성하기
-        async function submitForm(event) {
+        async function generateDialogues(event) {
             event.preventDefault();
 
-            const categoryId = document.getElementById("category").value;
+            const promptId = document.getElementById("prompt").value;
             const inputs = document.querySelectorAll(".dynamic-input textarea");
-            const answers = Array.from(inputs).map(input => ({
-                promptQuestionId: input.id.split("-")[1],
+
+            const promptAnswers = Array.from(inputs).map(input => ({
+                promptQueryId: input.id.split("-")[1],
                 answer: input.value
             }));
 
-            const requestData = {
-                categoryId: categoryId,
-                title: "면접 질문 생성 예시",  // 예시로 제목을 작성
-                answers: answers
-            };
+            const requestData = {promptAnswers};
 
-            const response = await fetch("/api/interview", {
+            const response = await fetch(`/api/prompts/${promptId}/dialogues`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {"Content-Type": "application/json"},
                 body: JSON.stringify(requestData)
             });
 
-            const interviewQuestions = await response.json();
-            displayInterviewQuestions(interviewQuestions);
+            dialogues = await response.json();
+            displayInterviewDialogues(dialogues);
         }
 
-        // 생성된 면접 질문 표시
-        function displayInterviewQuestions(interview) {
+        function displayInterviewDialogues(dialogues) {
             const outputDiv = document.getElementById("output");
-            outputDiv.innerHTML = "<h3>생성된 면접 질문</h3>";
+            outputDiv.innerHTML = "<h3>질문 & 답변</h3>";
 
-            interview.dialogues.forEach(dialogue => {
+            dialogues.forEach(dialogue => {
                 const questionElement = document.createElement("p");
                 questionElement.textContent = dialogue.question;
 
                 const answerElement = document.createElement("p");
-                answerElement.textContent = `답변: ${dialogue.answer}`;
+                answerElement.textContent = dialogue.answer;
 
                 outputDiv.appendChild(questionElement);
                 outputDiv.appendChild(answerElement);
             });
         }
+
+        async function saveInterview(event) {
+            event.preventDefault();
+
+            const promptId = document.getElementById("prompt").value;
+            const interviewTitle = document.getElementById("interview-title").value;
+            const inputs = document.querySelectorAll(".dynamic-input textarea");
+
+            const requestData = {
+                title: interviewTitle,
+                promptAnswers: Array.from(inputs).map(input => ({
+                    promptQueryId: input.id.split("-")[1],
+                    answer: input.value
+                })),
+                dialogues: dialogues.map(dialogue => ({
+                    question: dialogue.question,
+                    answer: dialogue.answer
+                }))
+            };
+
+            const response = await fetch(`/api/prompts/${promptId}/interviews`, {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(requestData)
+            });
+
+            const result = await response.json();
+            alert(`인터뷰 저장 완료: ${result.title}`);
+        }
     </script>
 </head>
 <body>
 <div class="container">
-    <form onsubmit="submitForm(event)">
-        <!-- 카테고리 선택 -->
+    <form onsubmit="saveInterview(event)">
+        <div class="interview-title">
+            <label for="interview-title">인터뷰 제목:</label>
+            <input type="text" id="interview-title" placeholder="인터뷰 제목을 입력하세요" required>
+        </div>
+
         <div class="category-selection">
-            <label for="category">질문 카테고리 선택:</label>
-            <select id="category" onchange="fetchPrompts(this.value)">
-                <option value="">카테고리 선택</option>
+            <label for="prompt">프롬프트 선택:</label>
+            <select id="prompt" onchange="fetchQueries(this.value)">
+                <option value="">프롬프트 선택</option>
             </select>
         </div>
 
-        <!-- 동적으로 생성될 입력 필드 -->
         <div id="input-fields" class="input-fields"></div>
-
-        <!-- 제출 버튼 -->
-        <button type="submit" class="submit-btn">면접 질문 생성</button>
+        <button type="button" class="submit-btn" onclick="generateDialogues(event)">면접 질문 생성</button>
+        <div id="output"></div>
+        <button type="submit" class="save-btn">인터뷰 저장</button>
     </form>
-
-    <!-- 생성된 면접 질문 표시 -->
-    <div id="output"></div>
 </div>
 </body>
 </html>
