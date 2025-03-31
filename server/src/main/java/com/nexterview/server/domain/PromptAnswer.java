@@ -47,6 +47,8 @@ public class PromptAnswer {
         this.answer = answer;
         this.query = query;
         this.interview = interview;
+
+        interview.addPromptAnswer(this);
     }
 
     private void validateAnswer(String answer) {

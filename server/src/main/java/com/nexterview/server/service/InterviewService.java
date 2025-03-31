@@ -9,9 +9,7 @@ import com.nexterview.server.domain.PromptAnswer;
 import com.nexterview.server.domain.PromptQuery;
 import com.nexterview.server.exception.NexterviewErrorCode;
 import com.nexterview.server.exception.NexterviewException;
-import com.nexterview.server.repository.DialogueRepository;
 import com.nexterview.server.repository.InterviewRepository;
-import com.nexterview.server.repository.PromptAnswerRepository;
 import com.nexterview.server.repository.PromptQueryRepository;
 import com.nexterview.server.repository.PromptRepository;
 import com.nexterview.server.service.dto.request.DialogueRequest;
@@ -32,8 +30,6 @@ public class InterviewService {
 
     private final PromptRepository promptRepository;
     private final PromptQueryRepository promptQueryRepository;
-    private final PromptAnswerRepository promptAnswerRepository;
-    private final DialogueRepository dialogueRepository;
     private final InterviewRepository interviewRepository;
 
     @Transactional
@@ -50,8 +46,6 @@ public class InterviewService {
         List<Dialogue> dialogues = createDialogues(interview, request.dialogues());
 
         interviewRepository.save(interview);
-        promptAnswerRepository.saveAll(answers);
-        dialogueRepository.saveAll(dialogues);
 
         return InterviewDto.of(interview, answers, dialogues);
     }

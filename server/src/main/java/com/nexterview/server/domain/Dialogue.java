@@ -49,6 +49,8 @@ public class Dialogue {
         this.question = question;
         this.answer = answer;
         this.interview = interview;
+
+        interview.addDialogue(this);
     }
 
     private void validateQuestion(String question) {
