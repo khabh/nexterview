@@ -2,6 +2,7 @@ package com.nexterview.server.controller.api;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -104,5 +105,45 @@ class InterviewControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void 인터뷰_조회() throws Exception {
+        Long interviewId = 1L;
+        InterviewDto response = new InterviewDto(
+                1L,
+                "백엔드 면접 인터뷰",
+                List.of(
+                        new PromptAnswerDto(1L, 1L, "자바는 무엇인가요?", "자바입니다"),
+                        new PromptAnswerDto(2L, 2L, "스프링 부트란?", "Spring Boot")
+                ),
+                List.of(
+                        new DialogueDto(1L, "Java의 장점은?", "객체지향적이고 플랫폼 독립적이다."),
+                        new DialogueDto(2L, "Spring Boot의 핵심 기능은?", "자동 설정과 내장 서버 지원이다.")
+                )
+        );
+
+        when(interviewService.findById(interviewId)).thenReturn(response);
+
+        mockMvc.perform(get("/api/interviews/{interviewId}", interviewId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.title").value("백엔드 면접 인터뷰"))
+                .andExpect(jsonPath("$.promptAnswers.length()").value(2))
+                .andExpect(jsonPath("$.promptAnswers[0].id").value(1))
+                .andExpect(jsonPath("$.promptAnswers[0].promptQueryId").value(1))
+                .andExpect(jsonPath("$.promptAnswers[0].query").value("자바는 무엇인가요?"))
+                .andExpect(jsonPath("$.promptAnswers[0].answer").value("자바입니다"))
+                .andExpect(jsonPath("$.promptAnswers[1].id").value(2))
+                .andExpect(jsonPath("$.promptAnswers[1].promptQueryId").value(2))
+                .andExpect(jsonPath("$.promptAnswers[1].query").value("스프링 부트란?"))
+                .andExpect(jsonPath("$.promptAnswers[1].answer").value("Spring Boot"))
+                .andExpect(jsonPath("$.dialogues.length()").value(2))
+                .andExpect(jsonPath("$.dialogues[0].id").value(1))
+                .andExpect(jsonPath("$.dialogues[0].question").value("Java의 장점은?"))
+                .andExpect(jsonPath("$.dialogues[0].answer").value("객체지향적이고 플랫폼 독립적이다."))
+                .andExpect(jsonPath("$.dialogues[1].id").value(2))
+                .andExpect(jsonPath("$.dialogues[1].question").value("Spring Boot의 핵심 기능은?"))
+                .andExpect(jsonPath("$.dialogues[1].answer").value("자동 설정과 내장 서버 지원이다."));
     }
 }
