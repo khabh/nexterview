@@ -95,7 +95,7 @@ class InterviewControllerTest {
         Long promptId = 1L;
 
         ApiInterviewRequest request = new ApiInterviewRequest(
-                "", // 제목 없음
+                "",
                 List.of(),
                 List.of()
         );
