@@ -11,6 +11,7 @@ public class DatabaseCleaner {
     private static final String DISABLE_FOREIGN_KEY_CHECKS = "SET REFERENTIAL_INTEGRITY FALSE";
     private static final String ENABLE_FOREIGN_KEY_CHECKS = "SET REFERENTIAL_INTEGRITY TRUE";
     private static final String TRUNCATE_TABLE = "TRUNCATE TABLE ";
+    private static final String RESET_AUTO_INCREMENT = "ALTER TABLE %s ALTER COLUMN ID RESTART WITH 1";
 
     private final List<String> tableNames;
     private final EntityManager entityManager;
@@ -28,6 +29,7 @@ public class DatabaseCleaner {
         entityManager.createNativeQuery(DISABLE_FOREIGN_KEY_CHECKS).executeUpdate();
         for (String tableName : tableNames) {
             entityManager.createNativeQuery(TRUNCATE_TABLE + tableName).executeUpdate();
+            entityManager.createNativeQuery(String.format(RESET_AUTO_INCREMENT, tableName)).executeUpdate();
         }
         entityManager.createNativeQuery(ENABLE_FOREIGN_KEY_CHECKS).executeUpdate();
         entityManager.clear();
