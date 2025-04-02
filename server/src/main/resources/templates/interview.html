@@ -3,6 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <title>Create Interview</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic+Coding&family=Young+Serif&display=swap"
+          rel="stylesheet">
+    <link rel="stylesheet" href="/css/fa.min.css">
+    <link rel="stylesheet" href="/css/interview.css">
     <script>
         let prompts = [];
         let dialogues = [];
@@ -36,8 +42,8 @@
             const selectedPrompt = prompts.find(prompt => prompt.id === parseInt(promptId));
             const queries = selectedPrompt ? selectedPrompt.queries : [];
 
-            const inputFields = document.getElementById("input-fields");
-            inputFields.innerHTML = "";
+            const queryContainer = document.getElementById("query-section");
+            queryContainer.innerHTML = "";
 
             queries.forEach(query => {
                 const div = document.createElement("div");
@@ -53,7 +59,7 @@
 
                 div.appendChild(label);
                 div.appendChild(textarea);
-                inputFields.appendChild(div);
+                queryContainer.appendChild(div);
             });
         }
 
@@ -76,24 +82,108 @@
                 body: JSON.stringify(requestData)
             });
 
-            dialogues = await response.json();
-            displayInterviewDialogues(dialogues);
+            const newDialogues = await response.json();
+            newDialogues.forEach(dialogue => {
+                const div = createDialogueElement(dialogue);
+                document.getElementById("dialogues").appendChild(div);
+            });
+
+            dialogues.push(...newDialogues);
         }
 
-        function displayInterviewDialogues(dialogues) {
-            const outputDiv = document.getElementById("output");
-            outputDiv.innerHTML = "<h3>질문 & 답변</h3>";
+        function createDialogueElement(dialogue) {
+            const div = document.createElement("div");
+            div.classList.add("dialogue-entry");
 
-            dialogues.forEach(dialogue => {
-                const questionElement = document.createElement("p");
-                questionElement.textContent = dialogue.question;
+            const questionText = document.createElement("span");
+            questionText.textContent = dialogue.question;
+            questionText.classList.add("dialogue-question-text");
 
-                const answerElement = document.createElement("p");
-                answerElement.textContent = dialogue.answer;
+            const answerText = document.createElement("span");
+            answerText.textContent = dialogue.answer;
+            answerText.classList.add("dialogue-answer-text");
 
-                outputDiv.appendChild(questionElement);
-                outputDiv.appendChild(answerElement);
-            });
+            const questionInput = document.createElement("input");
+            questionInput.type = "text";
+            questionInput.value = dialogue.question;
+            questionInput.classList.add("dialogue-question");
+            questionInput.style.display = "none";
+
+            const answerInput = document.createElement("textarea");
+            answerInput.type = "text";
+            answerInput.value = dialogue.answer;
+            answerInput.classList.add("dialogue-answer");
+            answerInput.style.display = "none";
+            answerInput.rows = 3;
+
+            const editButton = document.createElement("button");
+            editButton.textContent = "수정";
+            editButton.type = "button";
+            editButton.onclick = () => toggleEditMode(div, true);
+
+            const completeButton = document.createElement("button");
+            completeButton.textContent = "완료";
+            completeButton.type = "button";
+            completeButton.style.display = "none";
+            completeButton.onclick = () => {
+                dialogue.question = questionInput.value;
+                dialogue.answer = answerInput.value;
+                questionText.textContent = dialogue.question;
+                answerText.textContent = dialogue.answer;
+
+                toggleEditMode(div, false);
+            };
+
+            const deleteButton = document.createElement("button");
+            deleteButton.textContent = "삭제";
+            deleteButton.type = "button";
+            deleteButton.onclick = () => {
+                div.remove();
+                dialogues = dialogues.filter(d => d !== dialogue);
+            };
+
+            div.appendChild(questionText);
+            div.appendChild(questionInput);
+            div.appendChild(answerText);
+            div.appendChild(answerInput);
+            div.appendChild(editButton);
+            div.appendChild(completeButton);
+            div.appendChild(deleteButton);
+
+            return div;
+        }
+
+        function toggleEditMode(div, isEditing) {
+            const questionText = div.querySelector(".dialogue-question-text");
+            const answerText = div.querySelector(".dialogue-answer-text");
+            const questionInput = div.querySelector(".dialogue-question");
+            const answerInput = div.querySelector(".dialogue-answer");
+            const editButton = div.querySelector("button:nth-child(5)");
+            const completeButton = div.querySelector("button:nth-child(6)");
+
+            if (isEditing) {
+                questionInput.style.display = "";
+                answerInput.style.display = "";
+                questionText.style.display = "none";
+                answerText.style.display = "none";
+                editButton.style.display = "none";
+                completeButton.style.display = "";
+            } else {
+                questionInput.style.display = "none";
+                answerInput.style.display = "none";
+                questionText.style.display = "";
+                answerText.style.display = "";
+                editButton.style.display = "";
+                completeButton.style.display = "none";
+            }
+        }
+
+        function addCustomDialogue() {
+            const outputDiv = document.getElementById("dialogues");
+            const dialogue = {question: "", answer: ""};
+            const dialogueDiv = createDialogueElement(dialogue);
+            toggleEditMode(dialogueDiv, true);
+            outputDiv.appendChild(dialogueDiv);
         }
 
         async function saveInterview(event) {
@@ -103,16 +193,18 @@
             const interviewTitle = document.getElementById("interview-title").value;
             const inputs = document.querySelectorAll(".dynamic-input textarea");
 
+            const updatedDialogues = Array.from(document.querySelectorAll(".dialogue-entry")).map(entry => ({
+                question: entry.querySelector(".dialogue-question").value,
+                answer: entry.querySelector(".dialogue-answer").value
+            }));
+
             const requestData = {
                 title: interviewTitle,
                 promptAnswers: Array.from(inputs).map(input => ({
                     promptQueryId: input.id.split("-")[1],
                     answer: input.value
                 })),
-                dialogues: dialogues.map(dialogue => ({
-                    question: dialogue.question,
-                    answer: dialogue.answer
-                }))
+                dialogues: updatedDialogues
             };
 
             const response = await fetch(`/api/prompts/${promptId}/interviews`, {
@@ -130,21 +222,40 @@
 <div class="container">
     <form onsubmit="saveInterview(event)">
         <div class="interview-title">
-            <label for="interview-title">인터뷰 제목:</label>
-            <input type="text" id="interview-title" placeholder="인터뷰 제목을 입력하세요" required>
+            <label for="interview-title">인터뷰 제목</label>
+            <input type="text" id="interview-title" placeholder="인터뷰 제목을 입력해 주세요" required>
         </div>
 
         <div class="category-selection">
-            <label for="prompt">프롬프트 선택:</label>
+            <label for="prompt">프롬프트 선택</label>
             <select id="prompt" onchange="fetchQueries(this.value)">
                 <option value="">프롬프트 선택</option>
             </select>
         </div>
 
-        <div id="input-fields" class="input-fields"></div>
-        <button type="button" class="submit-btn" onclick="generateDialogues(event)">면접 질문 생성</button>
-        <div id="output"></div>
-        <button type="submit" class="save-btn">인터뷰 저장</button>
+
+        <div id="input-fields" class="input-fields">
+            <div class="query-section-title">프롬프트 질문지</div>
+            <div class="query-container">
+                <div id="query-section">
+                </div>
+                <button type="button" class="right-button" onclick="generateDialogues(event)">문답 자동 생성
+                </button>
+            </div>
+        </div>
+
+        <label>질문과 답변</label>
+        <div id="output">
+            <div id="dialogues">
+
+            </div>
+            <button class="add-dialogue-button" type="button" onclick="addCustomDialogue()">
+                <i class="fa-solid fa-plus fa-xl"></i>
+            </button>
+
+        </div>
+
+        <button type="submit" class="right-button">인터뷰 저장</button>
     </form>
 </div>
 </body>
