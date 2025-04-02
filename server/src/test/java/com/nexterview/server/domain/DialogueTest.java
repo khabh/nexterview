@@ -21,7 +21,7 @@ class DialogueTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"1234", "123456789012345678901234567890123456789012345678901"})
+    @ValueSource(strings = {"", "123456789012345678901234567890123456789012345678901"})
     void 질문의_길이가_유효하지_않은_경우_예외를_던진다(String question) {
         String answer = "질문 대답";
         Interview interview = new Interview("제목");
@@ -42,7 +42,7 @@ class DialogueTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"1234",
+    @ValueSource(strings = {
             "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901"})
     void 답변의_길이가_유효하지_않은_경우_예외를_던진다(String answer) {
         String question = "인터뷰 질문";

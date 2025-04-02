@@ -20,8 +20,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class Dialogue {
 
-    private static final StringValidator QUESTION_VALIDATOR = StringValidator.notEmptyWithRange(5, 50);
-    private static final StringValidator ANSWER_VALIDATOR = StringValidator.emptyWithRange(5, 100);
+    private static final StringValidator QUESTION_VALIDATOR = StringValidator.notEmptyWithRange(2, 50);
+    private static final StringValidator ANSWER_VALIDATOR = StringValidator.emptyWithRange(1, 100);
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

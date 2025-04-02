@@ -19,7 +19,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class PromptAnswer {
 
-    private static final StringValidator ANSWER_VALIDATOR = StringValidator.notEmptyWithRange(5, 100);
+    private static final StringValidator ANSWER_VALIDATOR = StringValidator.emptyWithRange(2, 100);
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

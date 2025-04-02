@@ -97,18 +97,6 @@ class InterviewServiceTest {
     }
 
     @Test
-    void 프롬프트_답변이_없는_경우_예외를_던진다() {
-        Prompt prompt = new Prompt("백엔드 면접", "백엔드 관련 질문을 생성해주세요.");
-        promptRepository.save(prompt);
-
-        InterviewRequest request = new InterviewRequest("백엔드 면접 인터뷰", prompt.getId(), List.of(), List.of());
-
-        assertThatThrownBy(() -> interviewService.saveInterview(request))
-                .isInstanceOf(NexterviewException.class)
-                .hasMessageContaining(NexterviewErrorCode.PROMPT_ANSWER_REQUIRED.getMessage());
-    }
-
-    @Test
     void 존재하지_않는_프롬프트_ID로_인터뷰_저장_시_예외를_던진다() {
         Long invalidPromptId = 999L;
         InterviewRequest request = new InterviewRequest("백엔드 면접 인터뷰", invalidPromptId, List.of(), List.of());
@@ -121,7 +109,6 @@ class InterviewServiceTest {
 
     @Test
     void 인터뷰를_ID로_조회한다() {
-        // Given
         Prompt prompt = new Prompt("백엔드 면접", "백엔드 관련 질문을 생성해주세요.");
         promptRepository.save(prompt);
 

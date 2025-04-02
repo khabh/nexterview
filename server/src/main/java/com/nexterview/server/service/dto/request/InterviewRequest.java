@@ -14,7 +14,6 @@ public record InterviewRequest(
         Long promptId,
 
         @Valid
-        @NotEmpty(message = "프롬프트 답변 목록은 필수입니다.")
         List<PromptAnswerRequest> promptAnswers,
 
         @Valid

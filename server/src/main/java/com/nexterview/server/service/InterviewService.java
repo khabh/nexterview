@@ -18,7 +18,6 @@ import com.nexterview.server.service.dto.request.PromptAnswerRequest;
 import com.nexterview.server.service.dto.response.InterviewDto;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,15 +50,11 @@ public class InterviewService {
     private void createPromptAnswers(
             Interview interview, List<PromptQuery> queries, List<PromptAnswerRequest> requests
     ) {
-        Map<Long, PromptQuery> queriesById = queries.stream()
-                .collect(toMap(PromptQuery::getId, Function.identity()));
-        List<PromptAnswer> answers = requests.stream()
-                .filter(answer -> queriesById.containsKey(answer.promptQueryId()))
-                .map(answer -> new PromptAnswer(answer.answer(), queriesById.get(answer.promptQueryId()), interview))
-                .toList();
-
-        if (answers.isEmpty()) {
-            throw new NexterviewException(NexterviewErrorCode.PROMPT_ANSWER_REQUIRED);
+        Map<Long, String> answers = requests.stream()
+                .collect(toMap(PromptAnswerRequest::promptQueryId, PromptAnswerRequest::answer));
+        for (PromptQuery query : queries) {
+            String answer = answers.getOrDefault(query.getId(), "");
+            new PromptAnswer(answer, query, interview);
         }
     }
 
