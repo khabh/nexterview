@@ -9,9 +9,10 @@
           rel="stylesheet">
     <link rel="stylesheet" href="/css/fa.min.css">
     <link rel="stylesheet" href="/css/interview.css">
+
+    <script src="/js/sweetalert.js"></script>
     <script>
         let prompts = [];
-        let dialogues = [];
 
         document.addEventListener("DOMContentLoaded", function () {
             fetchPrompts();
@@ -19,7 +20,7 @@
 
         async function fetchPrompts() {
             if (prompts.length === 0) {
-                const response = await fetch("/api/prompts");
+                const response = await apiFetch("/api/prompts");
                 prompts = await response.json();
             }
 
@@ -72,11 +73,11 @@
             const promptAnswers = Array.from(inputs).map(input => ({
                 promptQueryId: input.id.split("-")[1],
                 answer: input.value
-            }));
+            })).filter(answerObj => answerObj.answer !== "");
 
             const requestData = {promptAnswers};
 
-            const response = await fetch(`/api/prompts/${promptId}/dialogues`, {
+            const response = await apiFetch(`/api/prompts/${promptId}/dialogues`, {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
                 body: JSON.stringify(requestData)
@@ -87,8 +88,6 @@
                 const div = createDialogueElement(dialogue);
                 document.getElementById("dialogues").appendChild(div);
             });
-
-            dialogues.push(...newDialogues);
         }
 
         function createDialogueElement(dialogue) {
@@ -126,10 +125,8 @@
             completeButton.type = "button";
             completeButton.style.display = "none";
             completeButton.onclick = () => {
-                dialogue.question = questionInput.value;
-                dialogue.answer = answerInput.value;
-                questionText.textContent = dialogue.question;
-                answerText.textContent = dialogue.answer;
+                questionText.textContent = questionInput.value;
+                answerText.textContent = answerInput.value;
 
                 toggleEditMode(div, false);
             };
@@ -139,7 +136,6 @@
             deleteButton.type = "button";
             deleteButton.onclick = () => {
                 div.remove();
-                dialogues = dialogues.filter(d => d !== dialogue);
             };
 
             div.appendChild(questionText);
@@ -193,21 +189,37 @@
             const interviewTitle = document.getElementById("interview-title").value;
             const inputs = document.querySelectorAll(".dynamic-input textarea");
 
-            const updatedDialogues = Array.from(document.querySelectorAll(".dialogue-entry")).map(entry => ({
-                question: entry.querySelector(".dialogue-question").value,
-                answer: entry.querySelector(".dialogue-answer").value
-            }));
+            const dialogueEntries = Array.from(document.querySelectorAll(".dialogue-entry"));
+            const editingDialogues = dialogueEntries
+                .filter(entry => entry.querySelector(".dialogue-question").style.display !== "none");
+            if (editingDialogues.length > 0) {
+                const result = await Swal.fire({
+                    title: "⚠️ 편집 중인 문답이 있습니다",
+                    text: "아직 편집이 완료되지 않은 문답이 있습니다. 수정 전 상태로 인터뷰를 저장하시겠습니까?",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonText: "확인",
+                    cancelButtonText: "취소"
+                });
+
+                if (!result.isConfirmed) return;
+            }
+
+            const completeDialogues = dialogueEntries.map(entry => ({
+                question: entry.querySelector(".dialogue-question-text").textContent,
+                answer: entry.querySelector(".dialogue-answer-text").textContent
+            })).filter(dialogue => dialogue.question);
 
             const requestData = {
                 title: interviewTitle,
                 promptAnswers: Array.from(inputs).map(input => ({
                     promptQueryId: input.id.split("-")[1],
                     answer: input.value
-                })),
-                dialogues: updatedDialogues
+                })).filter(answerObj => answerObj.answer !== ""),
+                dialogues: completeDialogues
             };
 
-            const response = await fetch(`/api/prompts/${promptId}/interviews`, {
+            const response = await apiFetch(`/api/prompts/${promptId}/interviews`, {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
                 body: JSON.stringify(requestData)
