@@ -13,3 +13,15 @@ VALUES (1, '원하는 인터뷰 질문 내용'),
        (4, '진행한 프로젝트에 대한 설명'),
        (4, '사용한 기술 스택'),
        (4, '자신이 프로젝트에서 맡은 업무');
+
+INSERT INTO INTERVIEW(title)
+VALUES ('인터뷰 제목');
+
+INSERT INTO PROMPT_ANSWER(query_id, interview_id, answer)
+values (2, 1, '저의 장점과 단점은 xxx입니다.'),
+       (3, 1, '저의 문제 해결 경험은 xxx입니다.');
+
+INSERT INTO DIALOGUE(question, answer, interview_id)
+VALUES ('질문1', '답변1', 1),
+       ('질문2', '답변2', 1),
+       ('질문3', '답변3', 1);
