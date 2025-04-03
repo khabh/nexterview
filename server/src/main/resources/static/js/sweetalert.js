@@ -1576,6 +1576,6 @@ async function apiFetch(url, options = {}) {
             confirmButtonText: "확인"
         });
         console.error(errorMessage, error);
-        return null;
+        throw error;
     }
 }
