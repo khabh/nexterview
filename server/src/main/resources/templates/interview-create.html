@@ -226,7 +226,7 @@
             });
 
             const result = await response.json();
-            alert(`인터뷰 저장 완료: ${result.title}`);
+            window.location.href = `/interviews/${result.id}`;
         }
     </script>
 </head>
