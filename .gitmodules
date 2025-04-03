@@ -1,0 +1,3 @@
+[submodule "server/src/main/resources/nexterview-config"]
+	path = server/src/main/resources/nexterview-config
+	url = https://github.com/khabh/nexterview-config.git

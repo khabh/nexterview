@@ -2,8 +2,8 @@ spring:
   application:
     name: server
 
-  profiles:
-    include: secret
+  config:
+    import: classpath:/nexterview-config/application-secret.yml
 
   datasource:
     driver-class-name: org.h2.Driver
