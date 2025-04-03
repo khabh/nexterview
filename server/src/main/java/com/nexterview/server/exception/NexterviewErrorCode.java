@@ -21,6 +21,9 @@ public enum NexterviewErrorCode {
     // Service
     PROMPT_NOT_FOUND("ID가 %d인 프롬프트를 찾을 수 없습니다."),
     INTERVIEW_NOT_FOUND("ID가 %d인 인터뷰를 찾을 수 없습니다."),
+
+    // DTO
+    ARGUMENT_INVALID("요청 형식이 올바르지 않습니다: "),
     ;
 
     private final String message;

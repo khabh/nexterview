@@ -1,5 +1,8 @@
 package com.nexterview.server.exception;
 
+import lombok.Getter;
+
+@Getter
 public class NexterviewException extends RuntimeException {
 
     private final NexterviewErrorCode errorCode;
