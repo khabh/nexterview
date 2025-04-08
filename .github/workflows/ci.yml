@@ -33,12 +33,11 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build without tests
+      - name: Clean build
         run: ./gradlew clean build
 
-      - name: Upload Test Report
-        if: failure()
-        uses: actions/upload-artifact@v4
+      - name: Publish unit test result
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
         with:
-          name: test-report
-          path: server/build/reports/tests/test
+          files: 'server/build/test-results/**/*.xml'
