@@ -25,3 +25,11 @@ spring:
       hibernate.format_sql: true
       dialect: org.hibernate.dialect.MySQL8InnoDBDialect
     defer-datasource-initialization: true  # JPA가 테이블 생성 후 data.sql 실행
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: prod
+    import: classpath:/nexterview-config/application-prod.yml
