@@ -1,7 +1,7 @@
-name: Java CI with Gradle
+name: Deploy
 
 on:
-  pull_request:
+  push:
     branches: [ "prod" ]
 
 jobs:
