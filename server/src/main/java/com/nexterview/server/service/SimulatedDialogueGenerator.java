@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 @Profile("local-dev")
 public class SimulatedDialogueGenerator implements DialogueGenerator {
 
-    public List<GeneratedDialogueDto> generate(CustomizedPrompt customizedPrompt) {
+    public GeneratedDialogues generate(CustomizedPrompt customizedPrompt) {
         List<GeneratedDialogueDto> generatedDialogues = new ArrayList<>();
         generatedDialogues.add(new GeneratedDialogueDto("지시문은?", customizedPrompt.getInstruction()));
         for (PromptComponent promptComponent : customizedPrompt.getPromptComponents()) {
@@ -22,6 +22,6 @@ public class SimulatedDialogueGenerator implements DialogueGenerator {
                     "답변은: " + promptComponent.getAnswer()));
         }
 
-        return generatedDialogues;
+        return new GeneratedDialogues(0, generatedDialogues);
     }
 }

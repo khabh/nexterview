@@ -93,7 +93,8 @@ class PromptServiceTest {
                 new GeneratedDialogueDto("equals()와 hashCode()는 왜 같이 오버라이딩해야 하나요?",
                         "equals()와 hashCode()는 객체의 동등성을 비교할 때 함께 사용되기 때문입니다.")
         );
-        when(dialogueGenerator.generate(expectedCustomizedPrompt)).thenReturn(generatedDialogues);
+        when(dialogueGenerator.generate(expectedCustomizedPrompt)).thenReturn(
+                new GeneratedDialogues(0, generatedDialogues));
 
         List<GeneratedDialogueDto> result = promptService.generateDialogues(request);
 

@@ -35,7 +35,7 @@ public class PromptService {
                 .collect(toMap(PromptAnswerRequest::promptQueryId, PromptAnswerRequest::answer));
         CustomizedPrompt customizedPrompt = CustomizedPrompt.of(prompt, promptQueries, promptAnswers);
 
-        return dialogueGenerator.generate(customizedPrompt);
+        return dialogueGenerator.generate(customizedPrompt).dialogues();
     }
 
     private Prompt findById(Long id) {

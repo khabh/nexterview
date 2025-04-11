@@ -1,9 +1,13 @@
 package com.nexterview.server.service;
 
 import com.nexterview.server.domain.CustomizedPrompt;
+import com.nexterview.server.exception.NexterviewErrorCode;
+import com.nexterview.server.exception.NexterviewException;
 import com.nexterview.server.service.dto.response.GeneratedDialogueDto;
 import java.util.List;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.ResponseEntity;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 
@@ -18,12 +22,31 @@ public class ChatClientDialogueGenerator implements DialogueGenerator {
                 .build();
     }
 
-    public List<GeneratedDialogueDto> generate(CustomizedPrompt customizedPrompt) {
-        String rawPrompt = customizedPrompt.getRawPrompt();
-        return chatClient.prompt()
-                .user(rawPrompt)
-                .call()
-                .entity(new ParameterizedTypeReference<>() {
-                });
+    public GeneratedDialogues generate(CustomizedPrompt customizedPrompt) {
+        try {
+            String rawPrompt = customizedPrompt.getRawPrompt();
+            ResponseEntity<ChatResponse, List<GeneratedDialogueDto>> chatResponse = chatClient.prompt()
+                    .user(rawPrompt)
+                    .call()
+                    .responseEntity(new ParameterizedTypeReference<>() {
+                    });
+            return createGeneratedDialogues(chatResponse);
+        } catch (Exception e) {
+            throw new NexterviewException(NexterviewErrorCode.CHAT_API_UNAVAILABLE);
+        }
+    }
+
+    private static GeneratedDialogues createGeneratedDialogues(
+            ResponseEntity<ChatResponse, List<GeneratedDialogueDto>> chatResponse
+    ) {
+        if (chatResponse.response() == null) {
+            throw new NexterviewException(NexterviewErrorCode.CHAT_API_UNAVAILABLE);
+        }
+        Integer totalTokens = chatResponse.response()
+                .getMetadata()
+                .getUsage()
+                .getTotalTokens();
+
+        return new GeneratedDialogues(totalTokens, chatResponse.entity());
     }
 }
