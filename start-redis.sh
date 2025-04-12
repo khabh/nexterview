@@ -11,4 +11,4 @@ if [ -n "$EXISTING" ]; then
 fi
 
 echo "🚀 Starting Redis container..."
-docker run -d --name $CONTAINER_NAME -p 6379:6379 redis:latest
+docker run -d --name $CONTAINER_NAME -p 6379:6379 redis:7.2
