@@ -21,6 +21,9 @@ public enum NexterviewErrorCode {
     // Service
     PROMPT_NOT_FOUND("ID가 %d인 프롬프트를 찾을 수 없습니다."),
     INTERVIEW_NOT_FOUND("ID가 %d인 인터뷰를 찾을 수 없습니다."),
+    CHAT_API_UNAVAILABLE("AI 응답을 받을 수 없습니다."),
+    GUEST_PROMPT_ACCESS_EXCEEDED("비회원은 하루에 한 번만 요청할 수 있습니다."),
+    REQUEST_TEMPORARILY_LOCKED("요청이 잠시 제한되었습니다. 잠시 후에 시도해 주세요."),
 
     // DTO
     ARGUMENT_INVALID("요청 형식이 올바르지 않습니다: "),

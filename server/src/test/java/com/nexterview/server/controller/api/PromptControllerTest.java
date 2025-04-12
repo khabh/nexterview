@@ -15,6 +15,7 @@ import com.nexterview.server.service.dto.request.PromptAnswerRequest;
 import com.nexterview.server.service.dto.response.GeneratedDialogueDto;
 import com.nexterview.server.service.dto.response.PromptDto;
 import com.nexterview.server.service.dto.response.PromptQueryDto;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +31,9 @@ class PromptControllerTest {
 
     @MockitoBean
     private PromptService promptService;
+
+    @MockitoBean
+    private IpExtractor ipExtractor;
 
     @Autowired
     private MockMvc mockMvc;
@@ -67,7 +71,8 @@ class PromptControllerTest {
                 new GeneratedDialogueDto("Generated Question 1", "Generated Answer 1"),
                 new GeneratedDialogueDto("Generated Question 2", "Generated Answer 2")
         );
-        when(promptService.generateDialogues(any(GenerateDialoguesRequest.class)))
+        when(ipExtractor.extract(any(HttpServletRequest.class))).thenReturn("127.0.0.1");
+        when(promptService.generateDialogues(any(GenerateDialoguesRequest.class), any(String.class)))
                 .thenReturn(generatedDialogues);
 
         mockMvc.perform(post("/api/prompts/{promptId}/dialogues", promptId)

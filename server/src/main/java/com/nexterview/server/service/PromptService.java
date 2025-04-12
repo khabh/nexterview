@@ -25,17 +25,32 @@ import org.springframework.transaction.annotation.Transactional;
 public class PromptService {
 
     private final DialogueGenerator dialogueGenerator;
+    private final PromptAccessLimiter promptAccessLimiter;
     private final PromptRepository promptRepository;
     private final PromptQueryRepository promptQueryRepository;
 
-    public List<GeneratedDialogueDto> generateDialogues(GenerateDialoguesRequest request) {
+    public List<GeneratedDialogueDto> generateDialogues(GenerateDialoguesRequest request, String clientIp) {
+        promptAccessLimiter.checkAccessOrThrow(clientIp);
+        try {
+            List<GeneratedDialogueDto> dialogues = generateDialogues(request);
+            promptAccessLimiter.commitAccess(clientIp);
+
+            return dialogues;
+        } catch (NexterviewException exception) {
+            promptAccessLimiter.rollbackAccess(clientIp);
+
+            throw exception;
+        }
+    }
+
+    private List<GeneratedDialogueDto> generateDialogues(GenerateDialoguesRequest request) {
         Prompt prompt = findById(request.promptId());
         List<PromptQuery> promptQueries = promptQueryRepository.findAllByPrompt(prompt);
         Map<Long, String> promptAnswers = request.promptAnswers().stream()
                 .collect(toMap(PromptAnswerRequest::promptQueryId, PromptAnswerRequest::answer));
         CustomizedPrompt customizedPrompt = CustomizedPrompt.of(prompt, promptQueries, promptAnswers);
 
-        return dialogueGenerator.generate(customizedPrompt);
+        return dialogueGenerator.generate(customizedPrompt).dialogues();
     }
 
     private Prompt findById(Long id) {
