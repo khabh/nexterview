@@ -17,15 +17,6 @@ jobs:
       run:
         working-directory: ./server
 
-    services:
-      redis:
-        image: redis:7.2
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - name: Checkout repository including submodules
         uses: actions/checkout@v4
