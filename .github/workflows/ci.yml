@@ -17,15 +17,6 @@ jobs:
       run:
         working-directory: ./server
 
-    services:
-      redis:
-        image: redis:7.2
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - name: Checkout repository including submodules
         uses: actions/checkout@v4
@@ -45,8 +36,21 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Start Redis container manually
+        run: |
+          docker run -d --name redis -p 6379:6379 redis:7.2
+          echo "Waiting for Redis to be ready..."
+          for i in {1..10}; do
+            if docker exec redis redis-cli ping | grep -q PONG; then
+              echo "✅ Redis is up!"
+              break
+            fi
+            echo "Waiting..."
+            sleep 1
+          done
+
       - name: Clean build
-        run: ./gradlew clean build
+        run: ./gradlew clean build -Dspring.profiles.include=ci
 
       - name: Publish unit test result
         uses: EnricoMi/publish-unit-test-result-action@v2
