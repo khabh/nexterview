@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -34,6 +35,16 @@ class GlobalControllerExceptionHandler {
 
         return ResponseEntity.badRequest()
                 .body(new ErrorResponse(errorCode.name(), errorMessage));
+    }
+
+    @ExceptionHandler(InternalAuthenticationServiceException.class)
+    public ResponseEntity<ErrorResponse> handleAuthenticationException(
+            InternalAuthenticationServiceException exception
+    ) {
+        log.error(exception.getMessage(), exception);
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ErrorResponse(HttpStatus.UNAUTHORIZED.name(), "유저 인증에 실패했습니다."));
     }
 
     @ExceptionHandler(Exception.class)

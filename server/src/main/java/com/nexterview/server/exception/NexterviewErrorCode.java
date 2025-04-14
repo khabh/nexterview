@@ -32,6 +32,7 @@ public enum NexterviewErrorCode {
     GUEST_PROMPT_ACCESS_EXCEEDED("비회원은 하루에 한 번만 요청할 수 있습니다."),
     REQUEST_TEMPORARILY_LOCKED("요청이 잠시 제한되었습니다. 잠시 후에 시도해 주세요."),
     EMAIL_DUPLICATED("이미 가입된 이메일입니다: %s"),
+    USER_NOT_FOUND("존재하지 않는 사용자입니다."),
 
     // DTO
     ARGUMENT_INVALID("요청 형식이 올바르지 않습니다: "),
