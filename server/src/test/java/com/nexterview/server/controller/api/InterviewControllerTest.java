@@ -19,6 +19,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -26,6 +27,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 @ActiveProfiles("test")
 @WebMvcTest(InterviewController.class)
+@Import(TestSecurityConfig.class)
 class InterviewControllerTest {
 
     @MockitoBean
@@ -94,7 +96,7 @@ class InterviewControllerTest {
     }
 
     @Test
-    void 인터뷰_저장_시_필수_값_없으면_에러() throws Exception {
+    void 인터뷰_저장_시_필수_값_없으면_오류가_발생한다() throws Exception {
         Long promptId = 1L;
 
         ApiInterviewRequest request = new ApiInterviewRequest(

@@ -13,6 +13,7 @@ import com.nexterview.server.service.dto.response.UserDto;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -20,6 +21,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 @ActiveProfiles("test")
 @WebMvcTest(UserController.class)
+@Import(TestSecurityConfig.class)
 class UserControllerTest {
 
     @MockitoBean
@@ -45,5 +47,16 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.email").value("test@email.com"))
                 .andExpect(jsonPath("$.nickname").value("테스트유저"));
+    }
+
+
+    @Test
+    void 사용자_회원가입_시_필수_값_없으면_오류가_발생한다() throws Exception {
+        UserRequest request = new UserRequest(null, null, null);
+
+        mockMvc.perform(post("/api/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
     }
 }
