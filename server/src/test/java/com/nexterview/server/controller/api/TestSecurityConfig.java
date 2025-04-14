@@ -1,6 +1,6 @@
 package com.nexterview.server.controller.api;
 
-import com.nexterview.server.config.SecurityConfig;
+import com.nexterview.server.security.SecurityConfig;
 import com.nexterview.server.security.TokenProvider;
 import com.nexterview.server.security.jwt.JwtAccessDeniedHandler;
 import com.nexterview.server.security.jwt.JwtAuthenticationEntryPoint;
