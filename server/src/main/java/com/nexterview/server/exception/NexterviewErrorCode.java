@@ -7,7 +7,7 @@ public enum NexterviewErrorCode {
 
     // Auth
     JWT_EXPIRED("토큰이 만료되었습니다."),
-    INVALID_JWT("잘못된 토큰입니다."),
+    JWT_INVALID("잘못된 토큰입니다."),
 
     // Domain
     DIALOGUE_QUESTION_INVALID("인터뷰 문답의 질문이 유효하지 않습니다: %s"),
