@@ -3,6 +3,7 @@ package com.nexterview.server.controller.exception;
 import com.nexterview.server.exception.NexterviewErrorCode;
 import com.nexterview.server.exception.NexterviewException;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+@Slf4j
 @ControllerAdvice
 class GlobalControllerExceptionHandler {
 
@@ -23,7 +25,8 @@ class GlobalControllerExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(
-            MethodArgumentNotValidException exception) {
+            MethodArgumentNotValidException exception
+    ) {
         NexterviewErrorCode errorCode = NexterviewErrorCode.ARGUMENT_INVALID;
         String errorMessage = errorCode.getMessage() + exception.getFieldErrors().stream()
                 .map(DefaultMessageSourceResolvable::getDefaultMessage)
@@ -35,6 +38,7 @@ class GlobalControllerExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnexpectedException(Exception exception) {
+        log.error(exception.getMessage(), exception);
         String message = "서버 내부 오류가 발생했습니다. 관리자에게 문의하세요.";
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

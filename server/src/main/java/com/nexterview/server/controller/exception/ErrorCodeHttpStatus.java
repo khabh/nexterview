@@ -27,8 +27,11 @@ public class ErrorCodeHttpStatus {
         // 404 Not Found
         ERROR_CODE_TO_STATUS.put(NexterviewErrorCode.PROMPT_NOT_FOUND, HttpStatus.NOT_FOUND);
         ERROR_CODE_TO_STATUS.put(NexterviewErrorCode.INTERVIEW_NOT_FOUND, HttpStatus.NOT_FOUND);
-    }
 
+        // 409 Conflict
+        ERROR_CODE_TO_STATUS.put(NexterviewErrorCode.EMAIL_DUPLICATED, HttpStatus.CONFLICT);
+    }
+    
     public static HttpStatus getHttpStatus(NexterviewErrorCode errorCode) {
         return ERROR_CODE_TO_STATUS.getOrDefault(errorCode, HttpStatus.INTERNAL_SERVER_ERROR);
     }
