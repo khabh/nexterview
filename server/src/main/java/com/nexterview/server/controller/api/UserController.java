@@ -3,6 +3,7 @@ package com.nexterview.server.controller.api;
 import com.nexterview.server.service.UserService;
 import com.nexterview.server.service.dto.request.UserRequest;
 import com.nexterview.server.service.dto.response.UserDto;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,7 +18,7 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping("/users")
-    public UserDto signup(@RequestBody UserRequest request) {
+    public UserDto signup(@Valid @RequestBody UserRequest request) {
         return userService.saveUser(request);
     }
 }
