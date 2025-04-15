@@ -48,11 +48,7 @@ public class TokenProvider {
     }
 
     public Authentication getAuthentication(String token) {
-        Claims claims = Jwts.parser()
-                .verifyWith(key)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+        Claims claims = getValidPayload(token);
 
         String email = claims.getSubject();
         Long id = claims.get("id", Integer.class).longValue();
@@ -62,11 +58,12 @@ public class TokenProvider {
         return new UsernamePasswordAuthenticationToken(principal, token, principal.getAuthorities());
     }
 
-    public void validateToken(String token) {
+    private Claims getValidPayload(String token) {
         try {
-            Jwts.parser().verifyWith(key)
+            return Jwts.parser().verifyWith(key)
                     .build()
-                    .parseSignedClaims(token);
+                    .parseSignedClaims(token)
+                    .getPayload();
         } catch (ExpiredJwtException exception) {
             throw new NexterviewException(NexterviewErrorCode.JWT_EXPIRED);
         } catch (Exception exception) {

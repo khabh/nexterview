@@ -64,7 +64,7 @@ class TokenProviderTest {
                 .signWith(Keys.hmacShaKeyFor(secretKey.getBytes()))
                 .compact();
 
-        assertThatThrownBy(() -> tokenProvider.validateToken(expiredToken))
+        assertThatThrownBy(() -> tokenProvider.getAuthentication(expiredToken))
                 .isInstanceOf(NexterviewException.class)
                 .hasMessageContaining(NexterviewErrorCode.JWT_EXPIRED.getMessage());
     }
@@ -82,7 +82,7 @@ class TokenProviderTest {
                 .signWith(Keys.hmacShaKeyFor((secretKey + "invalid").getBytes()))
                 .compact();
 
-        assertThatThrownBy(() -> tokenProvider.validateToken(expiredToken))
+        assertThatThrownBy(() -> tokenProvider.getAuthentication(expiredToken))
                 .isInstanceOf(NexterviewException.class)
                 .hasMessageContaining(NexterviewErrorCode.JWT_INVALID.getMessage());
     }
@@ -90,7 +90,7 @@ class TokenProviderTest {
     @Test
     void 유효한_토큰일_경우_검증이_통과_한다() {
         String validToken = tokenProvider.generateToken(authenticationToken);
-        assertThatCode(() -> tokenProvider.validateToken(validToken))
+        assertThatCode(() -> tokenProvider.getAuthentication(validToken))
                 .doesNotThrowAnyException();
     }
 }
