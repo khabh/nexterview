@@ -25,3 +25,6 @@ INSERT INTO DIALOGUE(question, answer, interview_id)
 VALUES ('질문1', '답변1', 1),
        ('질문2', '답변2', 1),
        ('질문3', '답변3', 1);
+
+insert into USERS (email, password, nickname)
+values ('admin', '$2a$08$lDnHPz7eUkSi6ao14Twuau08mzhWrL4kyZGGU5xfiGALO/Vxd5DOi', 'admin');
