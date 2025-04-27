@@ -2,6 +2,7 @@ package com.nexterview.server.controller.api;
 
 import com.nexterview.server.service.InterviewService;
 import com.nexterview.server.service.dto.request.GuestInterviewRequest;
+import com.nexterview.server.service.dto.request.InterviewPasswordRequest;
 import com.nexterview.server.service.dto.request.UserInterviewRequest;
 import com.nexterview.server.service.dto.response.InterviewDto;
 import com.nexterview.server.service.dto.response.InterviewTypeDto;
@@ -31,13 +32,20 @@ public class InterviewController {
         return interviewService.saveGuestInterview(request);
     }
 
-    @GetMapping("/interviews/{interviewId}")
-    public InterviewDto getInterview(@PathVariable Long interviewId) {
-        return interviewService.findById(interviewId);
-    }
-
     @GetMapping("/interviews/{interviewId}/type")
     public InterviewTypeDto getInterviewType(@PathVariable Long interviewId) {
         return interviewService.getInterviewType(interviewId);
+    }
+
+    @GetMapping("/user-interviews/{interviewId}")
+    public InterviewDto getUserInterview(@PathVariable Long interviewId) {
+        return interviewService.findUserInterview(interviewId);
+    }
+
+    @PostMapping("/guest-interviews/{interviewId}")
+    public InterviewDto getGuestInterview(
+            @PathVariable Long interviewId, @Valid @RequestBody InterviewPasswordRequest request
+    ) {
+        return interviewService.findGuestInterview(interviewId, request);
     }
 }

@@ -105,4 +105,17 @@ public class Interview {
         }
         return InterviewType.USER;
     }
+
+    public void validateOwner(User user) {
+        boolean isOwnedByUser = this.user != null && this.user.equals(user);
+        if (!isOwnedByUser) {
+            throw new NexterviewException(NexterviewErrorCode.INVALID_INTERVIEW_ACCESS);
+        }
+    }
+
+    public void validatePassword(String password) {
+        if (!guestPassword.equals(password)) {
+            throw new NexterviewException(NexterviewErrorCode.INTERVIEW_GUEST_PASSWORD_MISMATCH);
+        }
+    }
 }

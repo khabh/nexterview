@@ -16,6 +16,7 @@ import com.nexterview.server.repository.PromptQueryRepository;
 import com.nexterview.server.repository.PromptRepository;
 import com.nexterview.server.service.dto.request.DialogueRequest;
 import com.nexterview.server.service.dto.request.GuestInterviewRequest;
+import com.nexterview.server.service.dto.request.InterviewPasswordRequest;
 import com.nexterview.server.service.dto.request.PromptAnswerRequest;
 import com.nexterview.server.service.dto.request.UserInterviewRequest;
 import com.nexterview.server.service.dto.response.InterviewDto;
@@ -89,9 +90,27 @@ public class InterviewService {
         return InterviewTypeDto.of(interviewType);
     }
 
-    public InterviewDto findById(Long interviewId) {
-        Interview interview = findInterviewEntityById(interviewId);
+    public InterviewDto findUserInterview(Long interviewId) {
+        Interview interview = findInterview(interviewId, InterviewType.USER);
+        User user = authenticatedUserContext.getUser();
+        interview.validateOwner(user);
+
         return InterviewDto.of(interview);
+    }
+
+    public InterviewDto findGuestInterview(Long interviewId, InterviewPasswordRequest request) {
+        Interview interview = findInterview(interviewId, InterviewType.GUEST);
+        interview.validatePassword(request.password());
+        return InterviewDto.of(interview);
+    }
+
+    private Interview findInterview(Long interviewId, InterviewType interviewType) {
+        Interview interview = findInterviewEntityById(interviewId);
+        if (interview.getInterviewType() != interviewType) {
+            throw new NexterviewException(NexterviewErrorCode.INVALID_INTERVIEW_TYPE);
+        }
+
+        return interview;
     }
 
     private Interview findInterviewEntityById(Long interviewId) {
