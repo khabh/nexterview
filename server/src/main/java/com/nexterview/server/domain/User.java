@@ -81,17 +81,15 @@ public class User {
         if (this == o) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (!(o instanceof User user)) {
             return false;
         }
-        User user = (User) o;
 
-        if (id != null && user.id != null) {
-            return Objects.equals(id, user.id);
+        if (id != null && user.getId() != null) {
+            return Objects.equals(id, user.getId());
         }
-
-        return Objects.equals(email, user.email) &&
-                Objects.equals(nickname, user.nickname);
+        return Objects.equals(email, user.getEmail()) &&
+                Objects.equals(nickname, user.getNickname());
     }
 
     @Override
