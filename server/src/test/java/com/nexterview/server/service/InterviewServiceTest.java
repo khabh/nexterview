@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.nexterview.server.domain.Dialogue;
 import com.nexterview.server.domain.Interview;
+import com.nexterview.server.domain.InterviewType;
 import com.nexterview.server.domain.Prompt;
 import com.nexterview.server.domain.PromptAnswer;
 import com.nexterview.server.domain.PromptQuery;
@@ -22,6 +23,7 @@ import com.nexterview.server.service.dto.request.PromptAnswerRequest;
 import com.nexterview.server.service.dto.request.UserInterviewRequest;
 import com.nexterview.server.service.dto.response.DialogueDto;
 import com.nexterview.server.service.dto.response.InterviewDto;
+import com.nexterview.server.service.dto.response.InterviewTypeDto;
 import com.nexterview.server.service.dto.response.PromptAnswerDto;
 import com.nexterview.server.util.DatabaseCleaner;
 import com.nexterview.server.util.InterviewFixture;
@@ -62,6 +64,9 @@ class InterviewServiceTest {
 
     @Autowired
     private UserFixture userFixture;
+
+    @Autowired
+    private InterviewFixture interviewFixture;
 
     @BeforeEach
     void setUp() {
@@ -215,5 +220,23 @@ class InterviewServiceTest {
                 .hasMessageContaining(
                         String.format(NexterviewErrorCode.INTERVIEW_NOT_FOUND.getMessage(), invalidInterviewId)
                 );
+    }
+
+    @Test
+    void userInterviewType을_조회한다() {
+        Interview userInterview = interviewFixture.getSavedUserInterview();
+
+        InterviewTypeDto result = interviewService.getInterviewType(userInterview.getId());
+
+        assertThat(result).isEqualTo(InterviewTypeDto.of(InterviewType.USER));
+    }
+
+    @Test
+    void guestInterviewType을_조회한다() {
+        Interview guestInterview = interviewFixture.getSavedGuestInterview();
+
+        InterviewTypeDto result = interviewService.getInterviewType(guestInterview.getId());
+
+        assertThat(result).isEqualTo(InterviewTypeDto.of(InterviewType.GUEST));
     }
 }

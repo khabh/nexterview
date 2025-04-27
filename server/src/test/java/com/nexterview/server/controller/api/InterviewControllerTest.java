@@ -15,6 +15,7 @@ import com.nexterview.server.service.dto.request.PromptAnswerRequest;
 import com.nexterview.server.service.dto.request.UserInterviewRequest;
 import com.nexterview.server.service.dto.response.DialogueDto;
 import com.nexterview.server.service.dto.response.InterviewDto;
+import com.nexterview.server.service.dto.response.InterviewTypeDto;
 import com.nexterview.server.service.dto.response.PromptAnswerDto;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -197,7 +198,6 @@ class InterviewControllerTest {
 
     @Test
     void 인터뷰_저장_시_필수_값_없으면_오류가_발생한다() throws Exception {
-        // 필수 값이 없으면 오류 발생 테스트
         GuestInterviewRequest request = new GuestInterviewRequest(
                 "",
                 null,
@@ -210,5 +210,17 @@ class InterviewControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void 인터뷰_타입_조회() throws Exception {
+        Long interviewId = 1L;
+        InterviewTypeDto response = new InterviewTypeDto("USER");
+
+        when(interviewService.getInterviewType(interviewId)).thenReturn(response);
+
+        mockMvc.perform(get("/api/interviews/{interviewId}/type", interviewId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.interviewType").value("USER"));
     }
 }

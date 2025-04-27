@@ -44,6 +44,15 @@ class InterviewTest {
             assertThatThrownBy(() -> Interview.createUserInterview("title", null))
                     .isInstanceOf(NexterviewException.class);
         }
+
+        @Test
+        void 인터뷰_타입을_올바르게_반환한다() {
+            Interview interview = Interview.createUserInterview("Valid Title", new User());
+
+            InterviewType result = interview.getInterviewType();
+
+            assertThat(result).isEqualTo(InterviewType.USER);
+        }
     }
 
     @Nested
@@ -88,6 +97,15 @@ class InterviewTest {
             assertThatThrownBy(() -> Interview.createGuestInterview(title, null))
                     .isInstanceOf(NexterviewException.class)
                     .hasMessageContaining("게스트용 인터뷰 비밀번호가 유효하지 않습니다:");
+        }
+
+        @Test
+        void 인터뷰_타입을_올바르게_반환한다() {
+            Interview interview = Interview.createGuestInterview("Valid Title", "1234");
+
+            InterviewType result = interview.getInterviewType();
+
+            assertThat(result).isEqualTo(InterviewType.GUEST);
         }
     }
 }
