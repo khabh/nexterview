@@ -1,5 +1,5 @@
 INSERT INTO USERS (email, password, nickname)
-VALUES ('admin', '$2a$08$lDnHPz7eUkSi6ao14Twuau08mzhWrL4kyZGGU5xfiGALO/Vxd5DOi', 'admin');
+VALUES ('aaa@aaa.com', '$2b$12$iBwdrWzHyu.Ds53Zp8JBq.TneXYKJsDbGgATWrxIlpK70Eu6IQQxO', 'admin');
 
 INSERT INTO PROMPT(id, topic, instruction)
 VALUES (1, '자유 형식', '사용자가 원하는 인터뷰 질문 내용을 참고해 질문을 생성해줘: '),
