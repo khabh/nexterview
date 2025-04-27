@@ -1553,6 +1553,15 @@
 async function apiFetch(url, options = {}) {
     let response;
 
+    const authToken = localStorage.getItem("authToken");
+
+    if (authToken) {
+        options.headers = {
+            ...options.headers,
+            "Authorization": `Bearer ${authToken}`
+        };
+    }
+
     try {
         response = await fetch(url, options);
     } catch (error) {
