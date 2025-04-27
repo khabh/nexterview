@@ -45,11 +45,6 @@ public class Interview {
     @OneToMany(mappedBy = "interview", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Dialogue> dialogues = new ArrayList<>();
 
-    public Interview(String title) {
-        validateTitle(title);
-        this.title = title;
-    }
-
     private Interview(Long id, String title, User user, String guestPassword) {
         validateInterview(title, user, guestPassword);
         this.id = id;
