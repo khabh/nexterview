@@ -3,11 +3,9 @@ package com.nexterview.server.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.nexterview.server.domain.Dialogue;
 import com.nexterview.server.domain.Interview;
 import com.nexterview.server.domain.InterviewType;
 import com.nexterview.server.domain.Prompt;
-import com.nexterview.server.domain.PromptAnswer;
 import com.nexterview.server.domain.PromptQuery;
 import com.nexterview.server.domain.User;
 import com.nexterview.server.exception.NexterviewErrorCode;
@@ -19,6 +17,7 @@ import com.nexterview.server.repository.PromptQueryRepository;
 import com.nexterview.server.repository.PromptRepository;
 import com.nexterview.server.service.dto.request.DialogueRequest;
 import com.nexterview.server.service.dto.request.GuestInterviewRequest;
+import com.nexterview.server.service.dto.request.InterviewPasswordRequest;
 import com.nexterview.server.service.dto.request.PromptAnswerRequest;
 import com.nexterview.server.service.dto.request.UserInterviewRequest;
 import com.nexterview.server.service.dto.response.DialogueDto;
@@ -172,50 +171,11 @@ class InterviewServiceTest {
     }
 
     @Test
-    void 인터뷰를_ID로_조회한다() {
-        Prompt prompt = new Prompt("백엔드 면접", "백엔드 관련 질문을 생성해주세요.");
-        promptRepository.save(prompt);
-
-        PromptQuery query1 = new PromptQuery("가장 많이 사용한 언어는?", prompt);
-        PromptQuery query2 = new PromptQuery("가장 자신 있는 기술은?", prompt);
-        promptQueryRepository.saveAll(List.of(query1, query2));
-
-        Interview interview = InterviewFixture.createGuestInterview("백엔드 면접 인터뷰");
-        interviewRepository.save(interview);
-
-        PromptAnswer answer1 = new PromptAnswer("자바입니다", query1, interview);
-        PromptAnswer answer2 = new PromptAnswer("Spring Boot", query2, interview);
-        List<PromptAnswer> answers = List.of(answer1, answer2);
-        promptAnswerRepository.saveAll(answers);
-
-        Dialogue dialogue1 = new Dialogue("Java의 장점은?", "객체지향적이고 플랫폼 독립적이다.", interview);
-        Dialogue dialogue2 = new Dialogue("Spring Boot의 핵심 기능은?", "자동 설정과 내장 서버 지원이다.", interview);
-        List<Dialogue> dialogues = List.of(dialogue1, dialogue2);
-        dialogueRepository.saveAll(dialogues);
-
-        InterviewDto result = interviewService.findById(interview.getId());
-
-        assertThat(result).isEqualTo(
-                new InterviewDto(
-                        interview.getId(),
-                        "백엔드 면접 인터뷰",
-                        List.of(
-                                new PromptAnswerDto(answer1.getId(), query1.getId(), "가장 많이 사용한 언어는?", "자바입니다"),
-                                new PromptAnswerDto(answer2.getId(), query2.getId(), "가장 자신 있는 기술은?", "Spring Boot")
-                        ),
-                        List.of(
-                                new DialogueDto(dialogue1.getId(), "Java의 장점은?", "객체지향적이고 플랫폼 독립적이다."),
-                                new DialogueDto(dialogue2.getId(), "Spring Boot의 핵심 기능은?", "자동 설정과 내장 서버 지원이다.")
-                        )
-                )
-        );
-    }
-
-    @Test
     void 존재하지_않는_ID로_인터뷰_조회_시_예외를_던진다() {
         Long invalidInterviewId = 999L;
 
-        assertThatThrownBy(() -> interviewService.findById(invalidInterviewId))
+        assertThatThrownBy(
+                () -> interviewService.findGuestInterview(invalidInterviewId, new InterviewPasswordRequest("1234")))
                 .isInstanceOf(NexterviewException.class)
                 .hasMessageContaining(
                         String.format(NexterviewErrorCode.INTERVIEW_NOT_FOUND.getMessage(), invalidInterviewId)
@@ -238,5 +198,42 @@ class InterviewServiceTest {
         InterviewTypeDto result = interviewService.getInterviewType(guestInterview.getId());
 
         assertThat(result).isEqualTo(InterviewTypeDto.of(InterviewType.GUEST));
+    }
+
+    @Test
+    void 잘못된_인터뷰_타입으로_인터뷰를_조회하면_예외를_던진다() {
+        Interview userInterview = interviewFixture.getSavedUserInterview();
+
+        assertThatThrownBy(
+                () -> interviewService.findGuestInterview(userInterview.getId(), new InterviewPasswordRequest("1234")))
+                .isInstanceOf(NexterviewException.class)
+                .hasMessageContaining(NexterviewErrorCode.INVALID_INTERVIEW_TYPE.getMessage());
+    }
+
+    @Test
+    void 인증되지_않은_유저가_유저인터뷰를_조회하면_예외를_던진다() {
+        Interview userInterview = interviewFixture.getSavedUserInterview();
+
+        assertThatThrownBy(() -> interviewService.findUserInterview(userInterview.getId()))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void 다른_유저의_인터뷰를_조회하면_예외를_던진다() {
+        Interview userInterview = interviewFixture.getSavedUserInterview();
+        User user = userFixture.getAuthenticatedUser("user2@gmail.com", "user2", "potato!123");
+        assertThatThrownBy(() -> interviewService.findUserInterview(userInterview.getId()))
+                .isInstanceOf(NexterviewException.class)
+                .hasMessageContaining(NexterviewErrorCode.INVALID_INTERVIEW_ACCESS.getMessage());
+    }
+
+    @Test
+    void 잘못된_패스워드로_게스트_인터뷰_조회하면_예외를_던진다() {
+        Interview guestInterview = interviewFixture.getSavedGuestInterview();
+
+        InterviewPasswordRequest wrongPasswordRequest = new InterviewPasswordRequest("wrongPassword");
+        assertThatThrownBy(() -> interviewService.findGuestInterview(guestInterview.getId(), wrongPasswordRequest))
+                .isInstanceOf(NexterviewException.class)
+                .hasMessageContaining(NexterviewErrorCode.INTERVIEW_GUEST_PASSWORD_MISMATCH.getMessage());
     }
 }

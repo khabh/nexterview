@@ -3,7 +3,9 @@ package com.nexterview.server.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.nexterview.server.exception.NexterviewErrorCode;
 import com.nexterview.server.exception.NexterviewException;
+import com.nexterview.server.util.UserFixture;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -52,6 +54,25 @@ class InterviewTest {
             InterviewType result = interview.getInterviewType();
 
             assertThat(result).isEqualTo(InterviewType.USER);
+        }
+
+        @Test
+        void 유효하지_않은_사용자_에게_인터뷰_소유권을_검증하면_예외를_던진다() {
+            User validUser = UserFixture.createUser("aaaa@gmail.com", "aaaa");
+            User invalidUser = UserFixture.createUser("bbbb@gmail.com", "bbbb");
+            Interview interview = Interview.createUserInterview("Valid Title", validUser);
+
+            assertThatThrownBy(() -> interview.validateOwner(invalidUser))
+                    .isInstanceOf(NexterviewException.class)
+                    .hasMessageContaining(NexterviewErrorCode.INVALID_INTERVIEW_ACCESS.getMessage());
+        }
+
+        @Test
+        void 유효한_사용자_에게_인터뷰_소유권을_검증하면_정상적으로_통과한다() {
+            User validUser = UserFixture.createUser("aaaa@gmail.com", "aaaa");
+            Interview interview = Interview.createUserInterview("Valid Title", validUser);
+
+            interview.validateOwner(validUser);
         }
     }
 
@@ -106,6 +127,25 @@ class InterviewTest {
             InterviewType result = interview.getInterviewType();
 
             assertThat(result).isEqualTo(InterviewType.GUEST);
+        }
+
+        @Test
+        void 잘못된_게스트_비밀번호_로_인터뷰_비밀번호를_검증하면_예외를_던진다() {
+            String validGuestPassword = "1234";
+            String invalidPassword = "wrongPassword";
+            Interview interview = Interview.createGuestInterview("Valid Title", validGuestPassword);
+
+            assertThatThrownBy(() -> interview.validatePassword(invalidPassword))
+                    .isInstanceOf(NexterviewException.class)
+                    .hasMessageContaining(NexterviewErrorCode.INTERVIEW_GUEST_PASSWORD_MISMATCH.getMessage());
+        }
+
+        @Test
+        void 올바른_게스트_비밀번호_로_인터뷰_비밀번호를_검증하면_정상적으로_통과한다() {
+            String validGuestPassword = "1234";
+            Interview interview = Interview.createGuestInterview("Valid Title", validGuestPassword);
+
+            interview.validatePassword(validGuestPassword);
         }
     }
 }

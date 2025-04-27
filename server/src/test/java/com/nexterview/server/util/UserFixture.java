@@ -8,6 +8,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -34,6 +35,14 @@ public class UserFixture {
         SecurityContextHolder.setContext(securityContext);
 
         return user;
+    }
+
+    public static User createUser(String email, String nickname) {
+        return createUser(email, nickname, "potato!!!");
+    }
+
+    public static User createUser(String email, String nickname, String rawPassword) {
+        return User.of(email, nickname, rawPassword, new BCryptPasswordEncoder());
     }
 }
 
