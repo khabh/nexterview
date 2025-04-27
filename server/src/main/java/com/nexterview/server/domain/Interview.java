@@ -98,4 +98,11 @@ public class Interview {
     public void addDialogue(Dialogue dialogue) {
         dialogues.add(dialogue);
     }
+
+    public InterviewType getInterviewType() {
+        if (guestPassword != null) {
+            return InterviewType.GUEST;
+        }
+        return InterviewType.USER;
+    }
 }

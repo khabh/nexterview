@@ -4,6 +4,7 @@ import static java.util.stream.Collectors.toMap;
 
 import com.nexterview.server.domain.Dialogue;
 import com.nexterview.server.domain.Interview;
+import com.nexterview.server.domain.InterviewType;
 import com.nexterview.server.domain.Prompt;
 import com.nexterview.server.domain.PromptAnswer;
 import com.nexterview.server.domain.PromptQuery;
@@ -18,6 +19,7 @@ import com.nexterview.server.service.dto.request.GuestInterviewRequest;
 import com.nexterview.server.service.dto.request.PromptAnswerRequest;
 import com.nexterview.server.service.dto.request.UserInterviewRequest;
 import com.nexterview.server.service.dto.response.InterviewDto;
+import com.nexterview.server.service.dto.response.InterviewTypeDto;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -80,10 +82,20 @@ public class InterviewService {
                 .orElseThrow(() -> new NexterviewException(NexterviewErrorCode.PROMPT_NOT_FOUND, promptId));
     }
 
-    public InterviewDto findById(Long interviewId) {
-        Interview interview = interviewRepository.findById(interviewId)
-                .orElseThrow(() -> new NexterviewException(NexterviewErrorCode.INTERVIEW_NOT_FOUND, interviewId));
+    public InterviewTypeDto getInterviewType(Long interviewTypeId) {
+        Interview interview = findInterviewEntityById(interviewTypeId);
+        InterviewType interviewType = interview.getInterviewType();
 
+        return InterviewTypeDto.of(interviewType);
+    }
+
+    public InterviewDto findById(Long interviewId) {
+        Interview interview = findInterviewEntityById(interviewId);
         return InterviewDto.of(interview);
+    }
+
+    private Interview findInterviewEntityById(Long interviewId) {
+        return interviewRepository.findById(interviewId)
+                .orElseThrow(() -> new NexterviewException(NexterviewErrorCode.INTERVIEW_NOT_FOUND, interviewId));
     }
 }

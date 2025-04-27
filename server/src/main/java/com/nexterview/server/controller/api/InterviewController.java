@@ -4,6 +4,7 @@ import com.nexterview.server.service.InterviewService;
 import com.nexterview.server.service.dto.request.GuestInterviewRequest;
 import com.nexterview.server.service.dto.request.UserInterviewRequest;
 import com.nexterview.server.service.dto.response.InterviewDto;
+import com.nexterview.server.service.dto.response.InterviewTypeDto;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,5 +34,10 @@ public class InterviewController {
     @GetMapping("/interviews/{interviewId}")
     public InterviewDto getInterview(@PathVariable Long interviewId) {
         return interviewService.findById(interviewId);
+    }
+
+    @GetMapping("/interviews/{interviewId}/type")
+    public InterviewTypeDto getInterviewType(@PathVariable Long interviewId) {
+        return interviewService.getInterviewType(interviewId);
     }
 }
