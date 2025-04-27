@@ -1,3 +1,6 @@
+INSERT INTO USERS (email, password, nickname)
+VALUES ('admin', '$2a$08$lDnHPz7eUkSi6ao14Twuau08mzhWrL4kyZGGU5xfiGALO/Vxd5DOi', 'admin');
+
 INSERT INTO PROMPT(id, topic, instruction)
 VALUES (1, '자유 형식', '사용자가 원하는 인터뷰 질문 내용을 참고해 질문을 생성해줘: '),
        (2, '인성 관련', '다음에 제공되는 지원자 관련 정보를 참고해서 면접에서 예상되는 인성 질문 생성해줘.'),
@@ -14,8 +17,8 @@ VALUES (1, '원하는 인터뷰 질문 내용'),
        (4, '사용한 기술 스택'),
        (4, '자신이 프로젝트에서 맡은 업무');
 
-INSERT INTO INTERVIEW(title)
-VALUES ('인터뷰 제목');
+INSERT INTO INTERVIEW(title, user_id)
+VALUES ('인터뷰 제목', 1);
 
 INSERT INTO PROMPT_ANSWER(query_id, interview_id, answer)
 values (2, 1, '저의 장점과 단점은 xxx입니다.'),
@@ -26,5 +29,3 @@ VALUES ('질문1', '답변1', 1),
        ('질문2', '답변2', 1),
        ('질문3', '답변3', 1);
 
-insert into USERS (email, password, nickname)
-values ('admin', '$2a$08$lDnHPz7eUkSi6ao14Twuau08mzhWrL4kyZGGU5xfiGALO/Vxd5DOi', 'admin');
