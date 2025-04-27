@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotEmpty;
 import java.util.List;
 import javax.validation.constraints.NotNull;
 
-public record InterviewRequest(
+public record UserInterviewRequest(
         @NotBlank(message = "인터뷰 제목은 필수입니다.")
         String title,
 

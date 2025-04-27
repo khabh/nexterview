@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic+Coding&family=Young+Serif&display=swap"
           rel="stylesheet">
-    <link rel="stylesheet" href="/css/fa.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/css/interview.css">
 
     <script src="/js/sweetalert.js"></script>
@@ -16,6 +16,18 @@
 
         document.addEventListener("DOMContentLoaded", function () {
             fetchPrompts();
+            const authToken = localStorage.getItem("authToken");
+
+            const passwordField = document.getElementById("interview-password");
+            const passwordLabel = document.getElementById("password-label");
+
+            if (!authToken) {
+                passwordField.style.display = "block";
+                passwordLabel.style.display = "block";
+            } else {
+                passwordField.style.display = "none";
+                passwordLabel.style.display = "none";
+            }
         });
 
         async function fetchPrompts() {
@@ -185,7 +197,6 @@
         async function saveInterview(event) {
             event.preventDefault();
 
-            const promptId = document.getElementById("prompt").value;
             const interviewTitle = document.getElementById("interview-title").value;
             const inputs = document.querySelectorAll(".dynamic-input textarea");
 
@@ -212,6 +223,7 @@
 
             const requestData = {
                 title: interviewTitle,
+                promptId: document.getElementById("prompt").value,
                 promptAnswers: Array.from(inputs).map(input => ({
                     promptQueryId: input.id.split("-")[1],
                     answer: input.value
@@ -219,12 +231,27 @@
                 dialogues: completeDialogues
             };
 
-            const response = await apiFetch(`/api/prompts/${promptId}/interviews`, {
+            const authToken = localStorage.getItem("authToken");
+            let url = '/api/user-interviews';
+            if (!authToken) {
+                url = '/api/guest-interviews';
+                const password = document.getElementById("interview-password")?.value || "";
+                if (!authToken && (!password || !/^\d{4}$/.test(password))) {
+                    return Swal.fire({
+                        title: "",
+                        text: "비밀번호는 숫자 네 자리를 입력해 주세요.",
+                        icon: "error",
+                    });
+                }
+                requestData.guestPassword = password;
+            }
+            const response = await apiFetch(url, {
                 method: "POST",
-                headers: {"Content-Type": "application/json"},
+                headers: {
+                    "Content-Type": "application/json",
+                },
                 body: JSON.stringify(requestData)
             });
-
             const result = await response.json();
             window.location.href = `/interviews/${result.id}`;
         }
@@ -262,11 +289,15 @@
 
             </div>
             <button class="add-dialogue-button" type="button" onclick="addCustomDialogue()">
-                <i class="fa-solid fa-plus fa-xl"></i>
+                <i class="fa-solid fa-plus"></i>
             </button>
 
         </div>
 
+        <div class="password-field">
+            <label for="interview-password" id="password-label">인터뷰 비밀번호</label>
+            <input type="password" id="interview-password" placeholder="비밀번호를 입력하세요">
+        </div>
         <button type="submit" class="right-button">인터뷰 저장</button>
     </form>
 </div>

@@ -1,9 +1,11 @@
 package com.nexterview.server.controller.api;
 
-import com.nexterview.server.controller.api.dto.request.ApiInterviewRequest;
 import com.nexterview.server.service.InterviewService;
-import com.nexterview.server.service.dto.request.InterviewRequest;
+import com.nexterview.server.service.dto.request.GuestInterviewRequest;
+import com.nexterview.server.service.dto.request.InterviewPasswordRequest;
+import com.nexterview.server.service.dto.request.UserInterviewRequest;
 import com.nexterview.server.service.dto.response.InterviewDto;
+import com.nexterview.server.service.dto.response.InterviewTypeDto;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,16 +22,30 @@ public class InterviewController {
 
     private final InterviewService interviewService;
 
-    @PostMapping("/prompts/{promptId}/interviews")
-    public InterviewDto saveInterview(@PathVariable Long promptId, @Valid @RequestBody ApiInterviewRequest apiRequest) {
-        InterviewRequest interviewRequest = new InterviewRequest(apiRequest.title(), promptId,
-                apiRequest.promptAnswers(), apiRequest.dialogues());
-
-        return interviewService.saveInterview(interviewRequest);
+    @PostMapping("/user-interviews")
+    public InterviewDto saveUserInterview(@Valid @RequestBody UserInterviewRequest request) {
+        return interviewService.saveUserInterview(request);
     }
 
-    @GetMapping("/interviews/{interviewId}")
-    public InterviewDto getInterview(@PathVariable Long interviewId) {
-        return interviewService.findById(interviewId);
+    @PostMapping("/guest-interviews")
+    public InterviewDto saveGuestInterview(@Valid @RequestBody GuestInterviewRequest request) {
+        return interviewService.saveGuestInterview(request);
+    }
+
+    @GetMapping("/interviews/{interviewId}/type")
+    public InterviewTypeDto getInterviewType(@PathVariable Long interviewId) {
+        return interviewService.getInterviewType(interviewId);
+    }
+
+    @GetMapping("/user-interviews/{interviewId}")
+    public InterviewDto getUserInterview(@PathVariable Long interviewId) {
+        return interviewService.findUserInterview(interviewId);
+    }
+
+    @PostMapping("/guest-interviews/{interviewId}")
+    public InterviewDto getGuestInterview(
+            @PathVariable Long interviewId, @Valid @RequestBody InterviewPasswordRequest request
+    ) {
+        return interviewService.findGuestInterview(interviewId, request);
     }
 }

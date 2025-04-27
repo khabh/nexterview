@@ -10,6 +10,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.util.Objects;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -73,5 +74,29 @@ public class User {
         } catch (StringInvalidException e) {
             throw new NexterviewException(NexterviewErrorCode.PASSWORD_INVALID, rawPassword);
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof User user)) {
+            return false;
+        }
+
+        if (id != null && user.getId() != null) {
+            return Objects.equals(id, user.getId());
+        }
+        return Objects.equals(email, user.getEmail()) &&
+                Objects.equals(nickname, user.getNickname());
+    }
+
+    @Override
+    public int hashCode() {
+        if (id != null) {
+            return Objects.hash(id);
+        }
+        return Objects.hash(email, nickname);
     }
 }

@@ -25,6 +25,7 @@ public class JwtAccessDeniedHandler implements AccessDeniedHandler {
         ErrorResponse errorResponse = new ErrorResponse("FORBIDDEN", "권한이 없는 사용자입니다.");
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding("UTF-8");
         objectMapper.writeValue(response.getWriter(), errorResponse);
     }
 }
