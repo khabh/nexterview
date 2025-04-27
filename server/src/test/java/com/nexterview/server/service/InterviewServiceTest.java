@@ -8,6 +8,7 @@ import com.nexterview.server.domain.Interview;
 import com.nexterview.server.domain.Prompt;
 import com.nexterview.server.domain.PromptAnswer;
 import com.nexterview.server.domain.PromptQuery;
+import com.nexterview.server.domain.User;
 import com.nexterview.server.exception.NexterviewErrorCode;
 import com.nexterview.server.exception.NexterviewException;
 import com.nexterview.server.repository.DialogueRepository;
@@ -16,18 +17,22 @@ import com.nexterview.server.repository.PromptAnswerRepository;
 import com.nexterview.server.repository.PromptQueryRepository;
 import com.nexterview.server.repository.PromptRepository;
 import com.nexterview.server.service.dto.request.DialogueRequest;
-import com.nexterview.server.service.dto.request.InterviewRequest;
+import com.nexterview.server.service.dto.request.GuestInterviewRequest;
 import com.nexterview.server.service.dto.request.PromptAnswerRequest;
+import com.nexterview.server.service.dto.request.UserInterviewRequest;
 import com.nexterview.server.service.dto.response.DialogueDto;
 import com.nexterview.server.service.dto.response.InterviewDto;
 import com.nexterview.server.service.dto.response.PromptAnswerDto;
 import com.nexterview.server.util.DatabaseCleaner;
+import com.nexterview.server.util.InterviewFixture;
+import com.nexterview.server.util.UserFixture;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 
 @ActiveProfiles("test")
@@ -55,13 +60,19 @@ class InterviewServiceTest {
     @Autowired
     private DatabaseCleaner databaseCleaner;
 
+    @Autowired
+    private UserFixture userFixture;
+
     @BeforeEach
     void setUp() {
         databaseCleaner.clear();
+        SecurityContextHolder.clearContext();
     }
 
     @Test
-    void 인터뷰를_저장한다() {
+    void 사용자_인터뷰를_저장한다() {
+        User user = userFixture.getAuthenticatedUser("abcd@gmail.com", "potato", "potato123!");
+
         Prompt prompt = new Prompt("백엔드 면접", "백엔드 관련 질문을 생성해주세요.");
         promptRepository.save(prompt);
 
@@ -77,9 +88,9 @@ class InterviewServiceTest {
         DialogueRequest dialogue2 = new DialogueRequest("Spring Boot의 핵심 기능은?", "핵심 기능");
         List<DialogueRequest> dialogues = List.of(dialogue1, dialogue2);
 
-        InterviewRequest request = new InterviewRequest("백엔드 면접 인터뷰", prompt.getId(), answers, dialogues);
+        UserInterviewRequest request = new UserInterviewRequest("백엔드 면접 인터뷰", prompt.getId(), answers, dialogues);
 
-        InterviewDto result = interviewService.saveInterview(request);
+        InterviewDto result = interviewService.saveUserInterview(request);
 
         assertThat(result).isEqualTo(
                 new InterviewDto(
@@ -93,7 +104,52 @@ class InterviewServiceTest {
                                 new DialogueDto(2L, "Spring Boot의 핵심 기능은?", "핵심 기능"))
                 )
         );
-        assertThat(interviewRepository.findAll()).hasSize(1);
+        Interview interview = interviewRepository.findById(result.id()).orElseThrow();
+        assertThat(interview.getUser().getId()).isEqualTo(user.getId());
+        assertThat(interview.getGuestPassword()).isNull();
+        assertThat(promptAnswerRepository.findAll()).hasSize(2);
+        assertThat(dialogueRepository.findAll()).hasSize(2);
+    }
+
+    @Test
+    void 게스트_인터뷰를_저장한다() {
+        String guestPassword = "1234";
+
+        Prompt prompt = new Prompt("백엔드 면접", "백엔드 관련 질문을 생성해주세요.");
+        promptRepository.save(prompt);
+
+        PromptQuery query1 = new PromptQuery("가장 많이 사용한 언어는?", prompt);
+        PromptQuery query2 = new PromptQuery("가장 자신 있는 기술은?", prompt);
+        promptQueryRepository.saveAll(List.of(query1, query2));
+
+        PromptAnswerRequest answer1 = new PromptAnswerRequest(query1.getId(), "자바입니다");
+        PromptAnswerRequest answer2 = new PromptAnswerRequest(query2.getId(), "정권 찌르기");
+        List<PromptAnswerRequest> answers = List.of(answer1, answer2);
+
+        DialogueRequest dialogue1 = new DialogueRequest("Java의 장점은?", "객체지향적이고 플랫폼 독립적이다.");
+        DialogueRequest dialogue2 = new DialogueRequest("Spring Boot의 핵심 기능은?", "핵심 기능");
+        List<DialogueRequest> dialogues = List.of(dialogue1, dialogue2);
+
+        GuestInterviewRequest request = new GuestInterviewRequest("백엔드 면접 인터뷰", prompt.getId(), guestPassword, answers,
+                dialogues);
+
+        InterviewDto result = interviewService.saveGuestInterview(request);
+
+        assertThat(result).isEqualTo(
+                new InterviewDto(
+                        1L,
+                        "백엔드 면접 인터뷰",
+                        List.of(
+                                new PromptAnswerDto(1L, 1L, "가장 많이 사용한 언어는?", "자바입니다"),
+                                new PromptAnswerDto(2L, 2L, "가장 자신 있는 기술은?", "정권 찌르기")),
+                        List.of(
+                                new DialogueDto(1L, "Java의 장점은?", "객체지향적이고 플랫폼 독립적이다."),
+                                new DialogueDto(2L, "Spring Boot의 핵심 기능은?", "핵심 기능"))
+                )
+        );
+        Interview interview = interviewRepository.findById(result.id()).orElseThrow();
+        assertThat(interview.getUser()).isNull();
+        assertThat(interview.getGuestPassword()).isEqualTo(guestPassword);
         assertThat(promptAnswerRepository.findAll()).hasSize(2);
         assertThat(dialogueRepository.findAll()).hasSize(2);
     }
@@ -101,9 +157,10 @@ class InterviewServiceTest {
     @Test
     void 존재하지_않는_프롬프트_ID로_인터뷰_저장_시_예외를_던진다() {
         Long invalidPromptId = 999L;
-        InterviewRequest request = new InterviewRequest("백엔드 면접 인터뷰", invalidPromptId, List.of(), List.of());
+        GuestInterviewRequest request = new GuestInterviewRequest("백엔드 면접 인터뷰", invalidPromptId, "1234", List.of(),
+                List.of());
 
-        assertThatThrownBy(() -> interviewService.saveInterview(request))
+        assertThatThrownBy(() -> interviewService.saveGuestInterview(request))
                 .isInstanceOf(NexterviewException.class)
                 .hasMessageContaining(
                         String.format(NexterviewErrorCode.PROMPT_NOT_FOUND.getMessage(), invalidPromptId));
@@ -118,7 +175,7 @@ class InterviewServiceTest {
         PromptQuery query2 = new PromptQuery("가장 자신 있는 기술은?", prompt);
         promptQueryRepository.saveAll(List.of(query1, query2));
 
-        Interview interview = new Interview("백엔드 면접 인터뷰");
+        Interview interview = InterviewFixture.createGuestInterview("백엔드 면접 인터뷰");
         interviewRepository.save(interview);
 
         PromptAnswer answer1 = new PromptAnswer("자바입니다", query1, interview);
