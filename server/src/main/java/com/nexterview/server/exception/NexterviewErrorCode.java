@@ -24,6 +24,8 @@ public enum NexterviewErrorCode {
     EMAIL_INVALID("유저 이메일이 유효하지 않습니다: %s"),
     NICKNAME_INVALID("유저 닉네임이 유효하지 않습니다: %s"),
     PASSWORD_INVALID("유저 비밀번호가 유효하지 않습니다: %s"),
+    USER_AND_GUEST_PASSWORD_CONFLICT("유저의 인터뷰에는 비밀번호를 설정할 수 없습니다."),
+    INTERVIEW_GUEST_PASSWORD_INVALID("게스트용 인터뷰 비밀번호가 유효하지 않습니다: %s"),
 
     // Service
     PROMPT_NOT_FOUND("ID가 %d인 프롬프트를 찾을 수 없습니다."),

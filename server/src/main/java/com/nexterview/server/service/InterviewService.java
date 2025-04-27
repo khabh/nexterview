@@ -7,14 +7,16 @@ import com.nexterview.server.domain.Interview;
 import com.nexterview.server.domain.Prompt;
 import com.nexterview.server.domain.PromptAnswer;
 import com.nexterview.server.domain.PromptQuery;
+import com.nexterview.server.domain.User;
 import com.nexterview.server.exception.NexterviewErrorCode;
 import com.nexterview.server.exception.NexterviewException;
 import com.nexterview.server.repository.InterviewRepository;
 import com.nexterview.server.repository.PromptQueryRepository;
 import com.nexterview.server.repository.PromptRepository;
 import com.nexterview.server.service.dto.request.DialogueRequest;
-import com.nexterview.server.service.dto.request.InterviewRequest;
+import com.nexterview.server.service.dto.request.GuestInterviewRequest;
 import com.nexterview.server.service.dto.request.PromptAnswerRequest;
+import com.nexterview.server.service.dto.request.UserInterviewRequest;
 import com.nexterview.server.service.dto.response.InterviewDto;
 import java.util.List;
 import java.util.Map;
@@ -27,29 +29,40 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class InterviewService {
 
+    private final AuthenticatedUserContext authenticatedUserContext;
     private final PromptRepository promptRepository;
     private final PromptQueryRepository promptQueryRepository;
     private final InterviewRepository interviewRepository;
 
     @Transactional
-    public InterviewDto saveInterview(InterviewRequest request) {
-        Interview interview = new Interview(request.title());
+    public InterviewDto saveUserInterview(UserInterviewRequest request) {
+        User user = authenticatedUserContext.getUser();
+        Interview interview = Interview.createUserInterview(request.title(), user);
+        return saveInterview(interview, request.promptId(), request.promptAnswers(), request.dialogues());
+    }
 
-        Prompt prompt = findPromptById(request.promptId());
-        List<PromptQuery> queries = promptQueryRepository.findAllByPrompt(prompt);
-        createPromptAnswers(interview, queries, request.promptAnswers());
+    @Transactional
+    public InterviewDto saveGuestInterview(GuestInterviewRequest request) {
+        Interview interview = Interview.createGuestInterview(request.title(), request.guestPassword());
+        return saveInterview(interview, request.promptId(), request.promptAnswers(), request.dialogues());
+    }
 
-        createDialogues(interview, request.dialogues());
-
+    private InterviewDto saveInterview(
+            Interview interview, Long promptId, List<PromptAnswerRequest> promptAnswers, List<DialogueRequest> dialogues
+    ) {
+        createPromptAnswers(interview, promptId, promptAnswers);
+        createDialogues(interview, dialogues);
         interviewRepository.save(interview);
 
         return InterviewDto.of(interview);
     }
 
-
     private void createPromptAnswers(
-            Interview interview, List<PromptQuery> queries, List<PromptAnswerRequest> requests
+            Interview interview, Long promptId, List<PromptAnswerRequest> requests
     ) {
+        Prompt prompt = findPromptById(promptId);
+        List<PromptQuery> queries = promptQueryRepository.findAllByPrompt(prompt);
+
         Map<Long, String> answers = requests.stream()
                 .collect(toMap(PromptAnswerRequest::promptQueryId, PromptAnswerRequest::answer));
         for (PromptQuery query : queries) {

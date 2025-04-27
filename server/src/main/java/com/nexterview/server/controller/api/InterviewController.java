@@ -1,8 +1,8 @@
 package com.nexterview.server.controller.api;
 
-import com.nexterview.server.controller.api.dto.request.ApiInterviewRequest;
 import com.nexterview.server.service.InterviewService;
-import com.nexterview.server.service.dto.request.InterviewRequest;
+import com.nexterview.server.service.dto.request.GuestInterviewRequest;
+import com.nexterview.server.service.dto.request.UserInterviewRequest;
 import com.nexterview.server.service.dto.response.InterviewDto;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,12 +20,14 @@ public class InterviewController {
 
     private final InterviewService interviewService;
 
-    @PostMapping("/prompts/{promptId}/interviews")
-    public InterviewDto saveInterview(@PathVariable Long promptId, @Valid @RequestBody ApiInterviewRequest apiRequest) {
-        InterviewRequest interviewRequest = new InterviewRequest(apiRequest.title(), promptId,
-                apiRequest.promptAnswers(), apiRequest.dialogues());
+    @PostMapping("/user-interviews")
+    public InterviewDto saveUserInterview(@Valid @RequestBody UserInterviewRequest request) {
+        return interviewService.saveUserInterview(request);
+    }
 
-        return interviewService.saveInterview(interviewRequest);
+    @PostMapping("/guest-interviews")
+    public InterviewDto saveGuestInterview(@Valid @RequestBody GuestInterviewRequest request) {
+        return interviewService.saveGuestInterview(request);
     }
 
     @GetMapping("/interviews/{interviewId}")
