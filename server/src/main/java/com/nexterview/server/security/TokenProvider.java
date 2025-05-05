@@ -1,7 +1,6 @@
 package com.nexterview.server.security;
 
 import com.nexterview.server.exception.NexterviewErrorCode;
-import com.nexterview.server.exception.NexterviewException;
 import com.nexterview.server.security.jwt.JwtConfig;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -11,6 +10,7 @@ import io.jsonwebtoken.security.Keys;
 import java.util.Date;
 import java.util.List;
 import javax.crypto.SecretKey;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -65,9 +65,9 @@ public class TokenProvider {
                     .parseSignedClaims(token)
                     .getPayload();
         } catch (ExpiredJwtException exception) {
-            throw new NexterviewException(NexterviewErrorCode.JWT_EXPIRED);
+            throw new BadCredentialsException(NexterviewErrorCode.JWT_EXPIRED.getMessage());
         } catch (Exception exception) {
-            throw new NexterviewException(NexterviewErrorCode.JWT_INVALID);
+            throw new BadCredentialsException(NexterviewErrorCode.JWT_INVALID.getMessage());
         }
     }
 }
