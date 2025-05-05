@@ -1578,6 +1578,12 @@ async function apiFetch(url, options = {}) {
 
 async function handleApiError(response) {
     let errorMessage = `🚨 HTTP ${response.status}`;
+    const isUnauthorized = response.status === 401;
+
+    if (isUnauthorized) {
+        localStorage.removeItem("authToken");
+    }
+
     try {
         const errorResponse = await response.json();
         if (errorResponse?.message) {
@@ -1592,6 +1598,10 @@ async function handleApiError(response) {
         text: errorMessage,
         icon: "error",
         confirmButtonText: "확인"
+    }).then(() => {
+        if (isUnauthorized) {
+            window.location.href = "/auth";
+        }
     });
 
     console.error(errorMessage);

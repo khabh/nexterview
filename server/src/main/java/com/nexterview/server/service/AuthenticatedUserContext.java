@@ -25,9 +25,17 @@ public class AuthenticatedUserContext {
         return userDetails.getId();
     }
 
-    public User getUser() {
+    User getUser() {
         Long userId = getUserId();
         return userRepository.findById(userId)
                 .orElseThrow(() -> new NexterviewException(NexterviewErrorCode.USER_NOT_FOUND));
+    }
+
+    public boolean isAuthenticated() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        return authentication != null &&
+                authentication.isAuthenticated() &&
+                authentication.getPrincipal() instanceof CustomUserDetails;
     }
 }

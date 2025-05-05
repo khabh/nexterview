@@ -17,11 +17,13 @@ public class SimulatedDialogueGenerator implements DialogueGenerator {
     public GeneratedDialogues generate(CustomizedPrompt customizedPrompt) {
         List<GeneratedDialogueDto> generatedDialogues = new ArrayList<>();
         generatedDialogues.add(new GeneratedDialogueDto("지시문은?", customizedPrompt.getInstruction()));
+        int tokenAmount = 0;
         for (PromptComponent promptComponent : customizedPrompt.getPromptComponents()) {
-            generatedDialogues.add(new GeneratedDialogueDto("질문은: " + promptComponent.getQuery(),
-                    "답변은: " + promptComponent.getAnswer()));
+            String answer = "답변은: " + promptComponent.getAnswer();
+            generatedDialogues.add(new GeneratedDialogueDto("질문은: " + promptComponent.getQuery(), answer));
+            tokenAmount += answer.length();
         }
 
-        return new GeneratedDialogues(0, generatedDialogues);
+        return new GeneratedDialogues(tokenAmount * 3, generatedDialogues);
     }
 }

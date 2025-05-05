@@ -1,6 +1,7 @@
 package com.nexterview.server.controller.api;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -9,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexterview.server.controller.api.dto.request.ApiPromptAnswersRequest;
+import com.nexterview.server.service.AuthenticatedUserContext;
 import com.nexterview.server.service.PromptService;
 import com.nexterview.server.service.dto.request.GenerateDialoguesRequest;
 import com.nexterview.server.service.dto.request.PromptAnswerRequest;
@@ -37,6 +39,9 @@ class PromptControllerTest {
     @MockitoBean
     private IpExtractor ipExtractor;
 
+    @MockitoBean
+    private AuthenticatedUserContext authenticatedUserContext;
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -62,7 +67,7 @@ class PromptControllerTest {
     }
 
     @Test
-    void 프롬프트에_대한_문답_생성() throws Exception {
+    void 프롬프트에_대한_문답_생성_인증된_사용자() throws Exception {
         Long promptId = 1L;
         List<PromptAnswerRequest> answers = List.of(
                 new PromptAnswerRequest(1L, "Answer 1"),
@@ -73,8 +78,9 @@ class PromptControllerTest {
                 new GeneratedDialogueDto("Generated Question 1", "Generated Answer 1"),
                 new GeneratedDialogueDto("Generated Question 2", "Generated Answer 2")
         );
-        when(ipExtractor.extract(any(HttpServletRequest.class))).thenReturn("127.0.0.1");
-        when(promptService.generateDialogues(any(GenerateDialoguesRequest.class), any(String.class)))
+
+        when(authenticatedUserContext.isAuthenticated()).thenReturn(true);
+        when(promptService.generateDialoguesForUser(any(GenerateDialoguesRequest.class)))
                 .thenReturn(generatedDialogues);
 
         mockMvc.perform(post("/api/prompts/{promptId}/dialogues", promptId)
@@ -86,5 +92,38 @@ class PromptControllerTest {
                 .andExpect(jsonPath("$[0].answer").value("Generated Answer 1"))
                 .andExpect(jsonPath("$[1].question").value("Generated Question 2"))
                 .andExpect(jsonPath("$[1].answer").value("Generated Answer 2"));
+
+        verify(promptService).generateDialoguesForUser(any(GenerateDialoguesRequest.class));
+    }
+
+    @Test
+    void 프롬프트에_대한_문답_생성_비인증된_사용자() throws Exception {
+        Long promptId = 1L;
+        List<PromptAnswerRequest> answers = List.of(
+                new PromptAnswerRequest(1L, "Answer 1"),
+                new PromptAnswerRequest(2L, "Answer 2")
+        );
+        ApiPromptAnswersRequest request = new ApiPromptAnswersRequest(answers);
+        List<GeneratedDialogueDto> generatedDialogues = List.of(
+                new GeneratedDialogueDto("Generated Question 1", "Generated Answer 1"),
+                new GeneratedDialogueDto("Generated Question 2", "Generated Answer 2")
+        );
+
+        when(authenticatedUserContext.isAuthenticated()).thenReturn(false);
+        when(ipExtractor.extract(any(HttpServletRequest.class))).thenReturn("127.0.0.1");
+        when(promptService.generateDialoguesForGuest(any(GenerateDialoguesRequest.class), any(String.class)))
+                .thenReturn(generatedDialogues);
+
+        mockMvc.perform(post("/api/prompts/{promptId}/dialogues", promptId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].question").value("Generated Question 1"))
+                .andExpect(jsonPath("$[0].answer").value("Generated Answer 1"))
+                .andExpect(jsonPath("$[1].question").value("Generated Question 2"))
+                .andExpect(jsonPath("$[1].answer").value("Generated Answer 2"));
+
+        verify(promptService).generateDialoguesForGuest(any(GenerateDialoguesRequest.class), any(String.class));
     }
 }

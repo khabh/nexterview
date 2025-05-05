@@ -111,7 +111,8 @@ class JwtSecurityIntegrationTest {
                     .exceptionHandling(exception -> exception
                             .authenticationEntryPoint(jwtAuthenticationEntryPoint)
                             .accessDeniedHandler(jwtAccessDeniedHandler))
-                    .addFilterBefore(new JwtFilter(tokenProvider), UsernamePasswordAuthenticationFilter.class)
+                    .addFilterBefore(new JwtFilter(tokenProvider, jwtAuthenticationEntryPoint),
+                            UsernamePasswordAuthenticationFilter.class)
                     .build();
         }
     }

@@ -45,7 +45,8 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .headers(headers -> headers
                         .frameOptions(FrameOptionsConfig::sameOrigin))
-                .addFilterBefore(new JwtFilter(tokenProvider), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new JwtFilter(tokenProvider, jwtAuthenticationEntryPoint),
+                        UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 

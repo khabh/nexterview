@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.nexterview.server.exception.NexterviewErrorCode;
-import com.nexterview.server.exception.NexterviewException;
 import com.nexterview.server.security.jwt.JwtConfig;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -16,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 class TokenProviderTest {
@@ -65,7 +65,7 @@ class TokenProviderTest {
                 .compact();
 
         assertThatThrownBy(() -> tokenProvider.getAuthentication(expiredToken))
-                .isInstanceOf(NexterviewException.class)
+                .isInstanceOf(AuthenticationException.class)
                 .hasMessageContaining(NexterviewErrorCode.JWT_EXPIRED.getMessage());
     }
 
@@ -83,7 +83,7 @@ class TokenProviderTest {
                 .compact();
 
         assertThatThrownBy(() -> tokenProvider.getAuthentication(expiredToken))
-                .isInstanceOf(NexterviewException.class)
+                .isInstanceOf(AuthenticationException.class)
                 .hasMessageContaining(NexterviewErrorCode.JWT_INVALID.getMessage());
     }
 
