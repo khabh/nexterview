@@ -1,6 +1,7 @@
 package com.nexterview.server.controller.api;
 
 import com.nexterview.server.controller.api.dto.request.ApiPromptAnswersRequest;
+import com.nexterview.server.service.AuthenticatedUserContext;
 import com.nexterview.server.service.PromptService;
 import com.nexterview.server.service.dto.request.GenerateDialoguesRequest;
 import com.nexterview.server.service.dto.response.GeneratedDialogueDto;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class PromptController {
 
     private final IpExtractor ipExtractor;
+    private final AuthenticatedUserContext authenticatedUserContext;
     private final PromptService promptService;
 
     @GetMapping("/prompts")
@@ -34,9 +36,11 @@ public class PromptController {
             @PathVariable Long promptId, @RequestBody @Valid ApiPromptAnswersRequest apiRequest,
             HttpServletRequest servletRequest
     ) {
-        String clientIp = ipExtractor.extract(servletRequest);
         GenerateDialoguesRequest request = new GenerateDialoguesRequest(promptId, apiRequest.promptAnswers());
-
-        return promptService.generateDialogues(request, clientIp);
+        if (authenticatedUserContext.isAuthenticated()) {
+            return promptService.generateDialoguesForUser(request);
+        }
+        String clientIp = ipExtractor.extract(servletRequest);
+        return promptService.generateDialoguesForGuest(request, clientIp);
     }
 }

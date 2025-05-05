@@ -27,6 +27,11 @@ public class ErrorCodeHttpStatus {
         ERROR_CODE_TO_STATUS.put(NexterviewErrorCode.INTERVIEW_GUEST_PASSWORD_INVALID, HttpStatus.BAD_REQUEST);
         ERROR_CODE_TO_STATUS.put(NexterviewErrorCode.INVALID_INTERVIEW_TYPE, HttpStatus.BAD_REQUEST);
         ERROR_CODE_TO_STATUS.put(NexterviewErrorCode.INTERVIEW_GUEST_PASSWORD_MISMATCH, HttpStatus.BAD_REQUEST);
+        ERROR_CODE_TO_STATUS.put(NexterviewErrorCode.EMAIL_INVALID, HttpStatus.BAD_REQUEST);
+        ERROR_CODE_TO_STATUS.put(NexterviewErrorCode.USER_NOT_FOUND, HttpStatus.BAD_REQUEST);
+        ERROR_CODE_TO_STATUS.put(NexterviewErrorCode.USER_PROMPT_ACCESS_EXCEEDED, HttpStatus.BAD_REQUEST);
+        ERROR_CODE_TO_STATUS.put(NexterviewErrorCode.GUEST_PROMPT_ACCESS_EXCEEDED, HttpStatus.BAD_REQUEST);
+        ERROR_CODE_TO_STATUS.put(NexterviewErrorCode.USER_NULL, HttpStatus.BAD_REQUEST);
 
         // 403 Forbidden
         ERROR_CODE_TO_STATUS.put(NexterviewErrorCode.INVALID_INTERVIEW_ACCESS, HttpStatus.FORBIDDEN);
