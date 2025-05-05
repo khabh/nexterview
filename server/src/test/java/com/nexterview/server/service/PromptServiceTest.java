@@ -3,21 +3,27 @@ package com.nexterview.server.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.nexterview.server.domain.CustomizedPrompt;
 import com.nexterview.server.domain.Prompt;
 import com.nexterview.server.domain.PromptComponent;
 import com.nexterview.server.domain.PromptQuery;
+import com.nexterview.server.domain.TokenQuota;
+import com.nexterview.server.domain.User;
 import com.nexterview.server.exception.NexterviewErrorCode;
 import com.nexterview.server.exception.NexterviewException;
 import com.nexterview.server.repository.PromptQueryRepository;
 import com.nexterview.server.repository.PromptRepository;
+import com.nexterview.server.repository.TokenQuotaRepository;
 import com.nexterview.server.service.dto.request.GenerateDialoguesRequest;
 import com.nexterview.server.service.dto.request.PromptAnswerRequest;
 import com.nexterview.server.service.dto.response.GeneratedDialogueDto;
 import com.nexterview.server.service.dto.response.PromptDto;
 import com.nexterview.server.util.DatabaseCleaner;
+import com.nexterview.server.util.UserFixture;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -46,6 +52,9 @@ class PromptServiceTest {
     @Autowired
     private PromptQueryRepository promptQueryRepository;
 
+    @Autowired
+    private TokenQuotaRepository tokenQuotaRepository;
+
     @MockitoBean
     private DialogueGenerator dialogueGenerator;
 
@@ -53,7 +62,10 @@ class PromptServiceTest {
     private DatabaseCleaner databaseCleaner;
 
     @Autowired
-    StringRedisTemplate redisTemplate;
+    private StringRedisTemplate redisTemplate;
+
+    @Autowired
+    private UserFixture userFixture;
 
     private final String ip = "127.0.0.1";
     private final String lockKey = "prompt:access:ip:lock:" + ip;
@@ -86,7 +98,78 @@ class PromptServiceTest {
     }
 
     @Test
-    void 프롬프트_기반_대화를_생성한다() {
+    void 유저가_질문을_생성한다() {
+        Prompt prompt = new Prompt("백엔드 면접", "답변을 참고해서 질문 2개 생성해줘");
+        promptRepository.save(prompt);
+
+        PromptQuery query1 = new PromptQuery("가장 자신 있는 기술", prompt);
+        PromptQuery query2 = new PromptQuery("협업 시 중요하게 여기는 점", prompt);
+        promptQueryRepository.saveAll(List.of(query1, query2));
+
+        PromptAnswerRequest answer1 = new PromptAnswerRequest(query1.getId(), "Java");
+        PromptAnswerRequest answer2 = new PromptAnswerRequest(query2.getId(), "소통");
+        GenerateDialoguesRequest request = new GenerateDialoguesRequest(prompt.getId(), List.of(answer1, answer2));
+
+        User user = userFixture.getAuthenticatedUser("user@example.com", "nickname", "12345678");
+        TokenQuota tokenQuota = new TokenQuota(user, 10);
+        tokenQuotaRepository.save(tokenQuota);
+
+        List<GeneratedDialogueDto> dialogues = List.of(
+                new GeneratedDialogueDto("Java의 장점은?", "객체 지향, 풍부한 생태계 등입니다."),
+                new GeneratedDialogueDto("소통이 중요한 이유는?", "협업 과정에서 오해를 줄이기 때문입니다.")
+        );
+        when(dialogueGenerator.generate(any())).thenReturn(new GeneratedDialogues(10, dialogues));
+
+        List<GeneratedDialogueDto> result = promptService.generateDialoguesForUser(request);
+
+        assertThat(result).isEqualTo(dialogues);
+        TokenQuota updatedQuota = tokenQuotaRepository.findByUser(user).orElseThrow();
+        assertThat(updatedQuota.getRemainingQuota()).isEqualTo(0);
+    }
+
+    @Test
+    void 유저에게_토큰_쿼터가_없으면_자동_생성된다() {
+        Prompt prompt = promptRepository.save(new Prompt("CS 질문", "답변 참고해서 질문 1개 생성"));
+        PromptQuery query = promptQueryRepository.save(new PromptQuery("관심 있는 기술", prompt));
+
+        User user = userFixture.getAuthenticatedUser("user@example.com", "nickname", "12345678");
+
+        PromptAnswerRequest answer = new PromptAnswerRequest(query.getId(), "Java");
+        GenerateDialoguesRequest request = new GenerateDialoguesRequest(prompt.getId(), List.of(answer));
+        List<GeneratedDialogueDto> dialogues = List.of(
+                new GeneratedDialogueDto("Java의 장점은?", "객체 지향, 풍부한 생태계 등입니다."),
+                new GeneratedDialogueDto("소통이 중요한 이유는?", "협업 과정에서 오해를 줄이기 때문입니다.")
+        );
+        when(dialogueGenerator.generate(any())).thenReturn(new GeneratedDialogues(10, dialogues));
+
+        promptService.generateDialoguesForUser(request);
+
+        TokenQuota quota = tokenQuotaRepository.findByUser(user).orElse(null);
+        assertThat(quota).isNotNull();
+        assertThat(quota.getRemainingQuota()).isEqualTo(222_212);
+    }
+
+    @Test
+    void 토큰이_부족하면_질문을_생성하지_않고_예외가_발생한다() {
+        Prompt prompt = promptRepository.save(new Prompt("CS 질문", "답변 참고해서 질문 1개 생성"));
+        PromptQuery query = promptQueryRepository.save(new PromptQuery("관심 있는 기술", prompt));
+
+        User user = userFixture.getAuthenticatedUser("user@example.com", "nickname", "12345678");
+
+        TokenQuota quota = new TokenQuota(user, 0);
+        tokenQuotaRepository.save(quota);
+
+        PromptAnswerRequest answer = new PromptAnswerRequest(query.getId(), "Java");
+        GenerateDialoguesRequest request = new GenerateDialoguesRequest(prompt.getId(), List.of(answer));
+
+        assertThatThrownBy(() -> promptService.generateDialoguesForUser(request))
+                .isInstanceOf(NexterviewException.class)
+                .hasMessageContaining(NexterviewErrorCode.USER_PROMPT_ACCESS_EXCEEDED.getMessage());
+        verify(dialogueGenerator, never()).generate(any());
+    }
+
+    @Test
+    void 게스트가_프롬프트_기반_대화를_생성한다() {
         Prompt prompt = new Prompt("백엔드 개발자 면접", "지원자 정보를 참고해서 인터뷰 질문을 두 개 생성해줘");
         promptRepository.save(prompt);
 
@@ -114,7 +197,7 @@ class PromptServiceTest {
         when(dialogueGenerator.generate(expectedCustomizedPrompt)).thenReturn(
                 new GeneratedDialogues(0, generatedDialogues));
 
-        List<GeneratedDialogueDto> result = promptService.generateDialogues(request, ip);
+        List<GeneratedDialogueDto> result = promptService.generateDialoguesForGuest(request, ip);
 
         assertThat(result).isEqualTo(generatedDialogues);
         assertThat(redisTemplate.hasKey(accessKey)).isTrue();
@@ -138,7 +221,7 @@ class PromptServiceTest {
         when(dialogueGenerator.generate(any())).thenThrow(
                 new NexterviewException(NexterviewErrorCode.CHAT_API_UNAVAILABLE));
 
-        assertThatThrownBy(() -> promptService.generateDialogues(request, ip))
+        assertThatThrownBy(() -> promptService.generateDialoguesForGuest(request, ip))
                 .isInstanceOf(NexterviewException.class)
                 .hasMessage(NexterviewErrorCode.CHAT_API_UNAVAILABLE.getMessage());
         assertThat(redisTemplate.hasKey(accessKey)).isFalse();
@@ -176,7 +259,7 @@ class PromptServiceTest {
                 executorService.execute(() -> {
                     awaitLatch(startLatch);
                     try {
-                        promptService.generateDialogues(request, ip);
+                        promptService.generateDialoguesForGuest(request, ip);
                         successCount.incrementAndGet();
                     } catch (NexterviewException e) {
                         if (e.getErrorCode() == NexterviewErrorCode.REQUEST_TEMPORARILY_LOCKED) {
