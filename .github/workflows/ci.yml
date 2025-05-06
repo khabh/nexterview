@@ -60,6 +60,8 @@ jobs:
           for i in {1..20}; do
             if docker exec mysql mysqladmin ping -h "127.0.0.1" --silent; then
               echo "✅ MySQL is up!"
+              echo "🔍 Checking DB connectivity from host..."
+              mysql -h 127.0.0.1 -P 3306 -uroot -p1234 -e "SHOW DATABASES;"
               break
             fi
             echo "Waiting..."
