@@ -53,12 +53,12 @@ jobs:
         run: |
           TAG=$(git tag --sort=-creatordate | head -n 1 || echo "v0.0.0")
           echo "Latest tag: $TAG"
-          echo "VERSION=$TAG" >> $GITHUB_ENV
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
       - name: Build and Push Docker Image with version and latest tag
         run: |
           IMAGE=${{ secrets.DOCKER_USERNAME }}/nexterview
-          VERSION=${{ env.VERSION }}
+          VERSION="${{ steps.get_tag.outputs.VERSION }}"
 
           docker build -t $IMAGE:$VERSION .
           docker tag $IMAGE:$VERSION $IMAGE:latest
