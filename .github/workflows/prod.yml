@@ -64,6 +64,17 @@ jobs:
           echo "Latest tag: $TAG"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
+      - name: Push tag using GitHub API
+        env:
+          TAG: ${{ steps.get_tag.outputs.tag }}
+          PAT: ${{ secrets.PAT }}
+        run: |
+          SHA=$(git rev-parse HEAD)
+          curl -X PATCH -H "Authorization: token $PAT" \
+            -H "Content-Type: application/json" \
+            -d "{\"sha\": \"$SHA\", \"force\": true}" \
+            https://api.github.com/repos/${{ github.repository }}/git/refs/tags/$TAG
+
       - name: Build and Push Docker Image with version and latest tag
         run: |
           IMAGE=${{ secrets.DOCKER_USERNAME }}/nexterview
