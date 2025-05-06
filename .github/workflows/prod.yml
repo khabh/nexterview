@@ -108,19 +108,23 @@ jobs:
             echo "⏳ Waiting for container to start (up to 20 seconds)..."
             for i in {1..20}; do
               if docker ps | grep -q nexterview-app; then
-                echo "✅ Container is up!"
                 break
               fi
               echo "Waiting..."
               sleep 1
             done
             
-            echo "⏳ Waiting for app to start (up to 20 seconds)..."
-            sleep 20
+            echo "⏳ Waiting for app to respond on localhost:80 (up to 30 seconds)..."
+            for i in {1..30}; do
+              if curl -s localhost:80 > /dev/null; then
+                echo "✅ App is responding on port 80!"
+                break
+              fi
+              echo "Waiting... ($i)"
+              sleep 1
+            done
             
-            echo "🔍 Checking application health on localhost:80"
-            curl -s localhost:80 > /dev/null
-            if [ $? -eq 0 ]; then
+            if curl -s localhost:80 > /dev/null; then
               echo "✅ App is responding on port 80. Deployment succeeded."
             else
               echo "❌ Failed to start 'latest' image. Printing logs..."
@@ -131,7 +135,7 @@ jobs:
               docker pull ${{ secrets.DOCKER_USERNAME }}/nexterview:prev
               docker run -d --name nexterview-app --network app-network -p 80:8080 ${{ secrets.DOCKER_USERNAME }}/nexterview:prev
 
-              echo "⏳ Waiting 10 seconds for rollback app to start..."
+              echo "⏳ Waiting 20 seconds for rollback app to start..."
               for i in {1..20}; do
                 if docker ps | grep -q nexterview-app; then
                   echo "✅ Container is up!"
@@ -141,12 +145,16 @@ jobs:
                 sleep 1
               done
             
-              echo "⏳ Waiting for app to start (up to 20 seconds)..."
-              sleep 20
-
-              echo "🔍 Checking rollback application health on localhost:80"
-              curl -s localhost:80 > /dev/null
-              if [ $? -eq 0 ]; then
+              echo "⏳ Waiting for rollback app to respond on localhost:80 (up to 30 seconds)..."
+              for i in {1..30}; do
+                if curl -s localhost:80 > /dev/null; then
+                  break
+                fi
+                echo "Waiting... ($i)"
+                sleep 1
+              done
+            
+              if curl -s localhost:80 > /dev/null; then
                 echo "✅ Rollback succeeded. Retagging prev as latest..."
                 docker tag ${{ secrets.DOCKER_USERNAME }}/nexterview:prev ${{ secrets.DOCKER_USERNAME }}/nexterview:latest
                 docker push ${{ secrets.DOCKER_USERNAME }}/nexterview:latest
