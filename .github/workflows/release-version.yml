@@ -71,11 +71,19 @@ jobs:
           new_version="v${major}.${minor}.${patch}"
           echo "version=$new_version" >> $GITHUB_OUTPUT
 
-      - name: Write version to file
-        run: echo "${{ steps.set_version.outputs.version }}" > version.txt
+      - name: Set version tag using GitHub REST API
+        id: set_version
+        run: |
+          VERSION="${{ steps.set_version.outputs.version }}"
 
-      - name: Upload version artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: version
-          path: version.txt
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -d '{
+                  "ref": "refs/heads/main",
+                  "sha": "'$(git rev-parse HEAD)'",
+                  "message": "Release $VERSION"
+                }' \
+            https://api.github.com/repos/${{ github.repository }}/git/refs
+
+          echo "Created new tag: $VERSION"
