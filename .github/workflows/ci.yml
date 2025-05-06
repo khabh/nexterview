@@ -49,6 +49,25 @@ jobs:
             sleep 1
           done
 
+      - name: Start MySQL container
+        run: |
+          docker run -d --name mysql \
+            -e MYSQL_ROOT_PASSWORD=1234 \
+            -e MYSQL_DATABASE=nexterview_test \
+            -p 3306:3306 \
+            mysql:8.0
+          echo "Waiting for MySQL to be ready..."
+          for i in {1..20}; do
+            if docker exec mysql mysqladmin ping -h "127.0.0.1" --silent; then
+              echo "✅ MySQL is up!"
+              echo "🔍 Checking DB connectivity from host..."
+              mysql -h 127.0.0.1 -P 3306 -uroot -p1234 -e "SHOW DATABASES;"
+              break
+            fi
+            echo "Waiting..."
+            sleep 1
+          done
+
       - name: Clean build
         run: ./gradlew clean build -Dspring.profiles.include=ci
 

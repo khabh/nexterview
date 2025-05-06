@@ -64,3 +64,7 @@ tasks.named('test') {
 bootJar {
     exclude("com/nexterview/server/dev/**")
 }
+
+test {
+    systemProperty "spring.profiles.active", "test"
+}
