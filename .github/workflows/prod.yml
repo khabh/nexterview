@@ -157,3 +157,29 @@ jobs:
               fi
               exit 1
             fi
+  cleanup:
+    needs: deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Remove old images
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            echo "🧹 Removing unused docker images..."
+            RUNNING_IMAGE_IDS=$(docker ps --format '{{.Image}}' | xargs -n1 docker inspect --format '{{.Id}}')
+
+            ALL_IMAGE_IDS=$(docker images ${{ secrets.DOCKER_USERNAME }}/nexterview --format '{{.ID}}' | sort | uniq)
+
+            for IMAGE_ID in $ALL_IMAGE_IDS; do
+              if ! echo "$RUNNING_IMAGE_IDS" | grep -q "$IMAGE_ID"; then
+                echo "🗑️ Deleting unused image $IMAGE_ID"
+                docker rmi "$IMAGE_ID"
+              else
+                echo "🔒 Skipping image in use: $IMAGE_ID"
+              fi
+            done
