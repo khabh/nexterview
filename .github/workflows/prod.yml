@@ -2,7 +2,7 @@ name: Deploy
 
 on:
   push:
-    branches: [ "prod" ]
+    branches: [ "test" ]
 
 jobs:
   build:
@@ -47,11 +47,27 @@ jobs:
       - name: Copy JAR to root (for Dockerfile)
         run: cp build/libs/*.jar ./app.jar
 
-      - name: Build Docker Image
-        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/nexterview:latest .
+      - name: Download version artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: version
+          path: ./
 
-      - name: Push Docker Image
-        run: docker push ${{ secrets.DOCKER_USERNAME }}/nexterview:latest
+      - name: Read version from file
+        id: get_version
+        run: |
+          VERSION=$(cat version.txt)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Build and Push Docker Image with version and latest tag
+        run: |
+          IMAGE=${{ secrets.DOCKER_USERNAME }}/nexterview
+          VERSION=${{ env.VERSION }}
+
+          docker build -t $IMAGE:$VERSION .
+          docker tag $IMAGE:$VERSION $IMAGE:latest
+          docker push $IMAGE:$VERSION
+          docker push $IMAGE:latest
 
   deploy:
     needs: build

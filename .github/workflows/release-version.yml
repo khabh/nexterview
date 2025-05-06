@@ -2,10 +2,12 @@ name: Release Version
 
 on:
   pull_request:
+    types: [ closed ]
     branches: [ "test" ]
 
 jobs:
-  release:
+  release-version:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -22,9 +24,6 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: 'true'
-
-      - name: Debug list all tags
-        run: git tag --list
 
       - name: Get latest tag
         id: get_tag
@@ -75,28 +74,8 @@ jobs:
       - name: Write version to file
         run: echo "${{ steps.set_version.outputs.version }}" > version.txt
 
-      - name: Create and push tag via REST API
-        run: |
-          VERSION=${{ steps.set_version.outputs.version }}
-          SHA="${{ github.sha }}"
-          
-          echo "📌 Creating tag $VERSION at commit $SHA"
-          
-          curl -s -X POST \
-          -H "Authorization: token ${{ secrets.PAT }}" \
-          -H "Content-Type: application/json" \
-          https://api.github.com/repos/${{ github.repository }}/git/refs \
-          -d @- <<EOF
-          {
-          "ref": "refs/tags/${VERSION}",
-          "sha": "${SHA}"
-          }
-          EOF
-
       - name: Upload version artifact
         uses: actions/upload-artifact@v4
         with:
           name: version
           path: version.txt
-
-
