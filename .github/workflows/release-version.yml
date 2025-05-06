@@ -73,7 +73,7 @@ jobs:
 
       - name: Push tag using GitHub API
         env:
-          TAG: ${{ steps.bump_version.outputs.next }}
+          TAG: ${{ steps.bump_version.outputs.version }}
           PAT: ${{ secrets.PAT }}
         run: |
           SHA=$(git rev-parse HEAD)
