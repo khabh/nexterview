@@ -86,12 +86,6 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
-          #          script: |
-          #            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-          #            docker pull ${{ secrets.DOCKER_USERNAME }}/nexterview:latest
-          #            docker stop nexterview-app || true
-          #            docker rm nexterview-app || true
-          #            docker run -d --name nexterview-app --network app-network -p 80:8080 ${{ secrets.DOCKER_USERNAME }}/nexterview:latest
           script: |
             docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }} --password-stdin
 
@@ -117,7 +111,6 @@ jobs:
             echo "⏳ Waiting for app to respond on localhost:80 (up to 30 seconds)..."
             for i in {1..30}; do
               if curl -s localhost:80 > /dev/null; then
-                echo "✅ App is responding on port 80!"
                 break
               fi
               echo "Waiting... ($i)"
