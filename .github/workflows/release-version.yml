@@ -1,0 +1,74 @@
+name: Release Version
+
+on:
+  push:
+    branches: [ "refactor/deployment-safety" ]
+
+jobs:
+  generate-version:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get latest tag
+        id: get_tag
+        run: |
+          TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "Latest tag: $TAG"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Parse version
+        id: parse_version
+        run: |
+          version="${{ steps.get_tag.outputs.tag }}"
+          version="${version#v}"
+          IFS='.' read -ra parts <<< "$version"
+          echo "major=${parts[0]}" >> $GITHUB_OUTPUT
+          echo "minor=${parts[1]}" >> $GITHUB_OUTPUT
+          echo "patch=${parts[2]}" >> $GITHUB_OUTPUT
+
+      - name: Determine next version
+        id: bump_version
+        run: |
+          major=${{ steps.parse_version.outputs.major }}
+          minor=${{ steps.parse_version.outputs.minor }}
+          patch=${{ steps.parse_version.outputs.patch }}
+          
+          labels=$(curl -s -H "Authorization: token ${{ secrets.PAT }}" \
+            https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/labels \
+            | jq -r '.[].name')
+          
+          if echo "$labels" | grep -q "version:major"; then
+            major=$((major + 1))
+            minor=0
+            patch=0
+          elif echo "$labels" | grep -q "version:minor"; then
+            minor=$((minor + 1))
+            patch=0
+          elif echo "$labels" | grep -q "version:patch"; then
+            patch=$((patch + 1))
+          else
+            echo "❌ No version label found"
+            exit 1
+          fi
+          
+          new_version="v${major}.${minor}.${patch}"
+          echo "next=$new_version" >> $GITHUB_OUTPUT
+
+      - name: Create and push new tag without identity
+        env:
+          TAG: ${{ steps.bump_version.outputs.next }}
+        run: |
+          git remote set-url origin https://x-access-token:${{ secrets.PAT }}}@github.com/${{ github.repository }}
+          git tag $TAG
+          git push origin $TAG
+
+      - name: Show current git version
+        run: |
+          LATEST_TAG=$(git describe --tags --abbrev=0)
+          echo "✅ Current version is: $LATEST_TAG"
