@@ -93,7 +93,7 @@ jobs:
           #            docker rm nexterview-app || true
           #            docker run -d --name nexterview-app --network app-network -p 80:8080 ${{ secrets.DOCKER_USERNAME }}/nexterview:latest
           script: |
-            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }} --password-stdin
 
             echo "🚀 Pulling latest image"
             docker pull ${{ secrets.DOCKER_USERNAME }}/nexterview:latest
@@ -109,7 +109,8 @@ jobs:
             sleep 10
 
             echo "🔍 Checking application health on localhost:80"
-            if nc -z localhost 80; then
+            curl -s localhost:80 > /dev/null
+            if [ $? -eq 0 ]; then
               echo "✅ App is responding on port 80. Deployment succeeded."
             else
               echo "❌ Failed to start 'latest' image. Printing logs..."
@@ -124,7 +125,8 @@ jobs:
               sleep 10
 
               echo "🔍 Checking rollback application health on localhost:80"
-              if nc -z localhost 80; then
+              curl -s localhost:80 > /dev/null
+              if [ $? -eq 0 ]; then
                 echo "✅ Rollback succeeded. Retagging prev as latest..."
                 docker tag ${{ secrets.DOCKER_USERNAME }}/nexterview:prev ${{ secrets.DOCKER_USERNAME }}/nexterview:latest
                 docker push ${{ secrets.DOCKER_USERNAME }}/nexterview:latest
