@@ -105,9 +105,16 @@ jobs:
             echo "🏗️ Running latest container"
             docker run -d --name nexterview-app --network app-network -p 80:8080 ${{ secrets.DOCKER_USERNAME }}/nexterview:latest
 
-            echo "⏳ Waiting 10 seconds for container to start..."
-            sleep 10
-
+            echo "⏳ Waiting for container to start (up to 20 seconds)..."
+            for i in {1..20}; do
+              if docker ps | grep -q nexterview-app; then
+                echo "✅ Container is up!"
+                break
+              fi
+              echo "Waiting..."
+              sleep 1
+            done
+            
             echo "🔍 Checking application health on localhost:80"
             curl -s localhost:80 > /dev/null
             if [ $? -eq 0 ]; then
@@ -115,14 +122,22 @@ jobs:
             else
               echo "❌ Failed to start 'latest' image. Printing logs..."
               docker logs nexterview-app || echo "No logs available"
-
+            
+            
               echo "🔁 Rolling back to 'prev' image"
               docker rm nexterview-app || true
               docker pull ${{ secrets.DOCKER_USERNAME }}/nexterview:prev
               docker run -d --name nexterview-app --network app-network -p 80:8080 ${{ secrets.DOCKER_USERNAME }}/nexterview:prev
 
               echo "⏳ Waiting 10 seconds for rollback app to start..."
-              sleep 10
+              for i in {1..20}; do
+                if docker ps | grep -q nexterview-app; then
+                  echo "✅ Container is up!"
+                  break
+                fi
+                echo "Waiting..."
+                sleep 1
+              done
 
               echo "🔍 Checking rollback application health on localhost:80"
               curl -s localhost:80 > /dev/null
