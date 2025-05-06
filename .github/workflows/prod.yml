@@ -94,47 +94,37 @@ jobs:
           #            docker run -d --name nexterview-app --network app-network -p 80:8080 ${{ secrets.DOCKER_USERNAME }}/nexterview:latest
           script: |
             docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-            
+
             echo "🚀 Pulling latest image"
             docker pull ${{ secrets.DOCKER_USERNAME }}/nexterview:latest
-            
+
             echo "🛑 Stopping and removing existing container (if any)"
             docker stop nexterview-app || true
             docker rm nexterview-app || true
-            
+
             echo "🏗️ Running latest container"
             docker run -d --name nexterview-app --network app-network -p 80:8080 ${{ secrets.DOCKER_USERNAME }}/nexterview:latest
-            
+
             echo "⏳ Waiting 10 seconds for container to start..."
             sleep 10
-            
-            echo "📋 Checking if container is running"
-            if ! docker ps | grep -q nexterview-app; then
-              echo "❌ Failed to start 'latest' image. Printing logs..."
-              docker logs nexterview-app || echo "No logs available"
-            
-              echo "🔁 Rolling back to 'prev' image"
-              docker rm nexterview-app || true
-              docker pull ${{ secrets.DOCKER_USERNAME }}/nexterview:prev
-              docker run -d --name nexterview-app --network app-network -p 80:8080 ${{ secrets.DOCKER_USERNAME }}/nexterview:prev
-            
+
             echo "🔍 Checking application health on localhost:80"
             if nc -z localhost 80; then
               echo "✅ App is responding on port 80. Deployment succeeded."
             else
-              echo "❌ App did not respond. Rolling back to prev image..."
+              echo "❌ Failed to start 'latest' image. Printing logs..."
+              docker logs nexterview-app || echo "No logs available"
 
-              docker rm -f nexterview-app || true
+              echo "🔁 Rolling back to 'prev' image"
+              docker rm nexterview-app || true
               docker pull ${{ secrets.DOCKER_USERNAME }}/nexterview:prev
-
-              echo "♻️ Running rollback container"
               docker run -d --name nexterview-app --network app-network -p 80:8080 ${{ secrets.DOCKER_USERNAME }}/nexterview:prev
 
               echo "⏳ Waiting 10 seconds for rollback app to start..."
               sleep 10
 
               echo "🔍 Checking rollback application health on localhost:80"
-              if  if nc -z localhost 80; then
+              if nc -z localhost 80; then
                 echo "✅ Rollback succeeded. Retagging prev as latest..."
                 docker tag ${{ secrets.DOCKER_USERNAME }}/nexterview:prev ${{ secrets.DOCKER_USERNAME }}/nexterview:latest
                 docker push ${{ secrets.DOCKER_USERNAME }}/nexterview:latest
