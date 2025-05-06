@@ -1,8 +1,8 @@
 name: Release Version
 
 on:
-  push:
-    branches: [ "refactor/deployment-safety" ]
+  pull_request:
+    branches: [ "test" ]
 
 jobs:
   generate-version:
