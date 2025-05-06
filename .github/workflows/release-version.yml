@@ -23,7 +23,7 @@ jobs:
           fetch-depth: 0
 
       - name: Get latest tag
-        id: get_latest_tag
+        id: get_tag
         run: |
           TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
           echo "Latest tag: $TAG"
@@ -38,6 +38,7 @@ jobs:
           echo "major=${parts[0]}" >> $GITHUB_OUTPUT
           echo "minor=${parts[1]}" >> $GITHUB_OUTPUT
           echo "patch=${parts[2]}" >> $GITHUB_OUTPUT
+
       - name: Determine next version
         id: bump_version
         run: |
