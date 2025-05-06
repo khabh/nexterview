@@ -69,7 +69,7 @@ jobs:
         env:
           TAG: ${{ steps.bump_version.outputs.next }}
         run: |
-          git remote set-url origin https://x-access-token:${{ secrets.PAT }}}@github.com/${{ github.repository }}
+          git remote set-url origin https://x-access-token:${{ secrets.PAT }}@github.com/${{ github.repository }}
           git tag $TAG
           git push origin $TAG
 
