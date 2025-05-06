@@ -37,5 +37,5 @@ spring:
 spring:
   config:
     activate:
-      on-profile: prod1
+      on-profile: prod
     import: classpath:/nexterview-config/application-prod.yml
