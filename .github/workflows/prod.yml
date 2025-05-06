@@ -47,14 +47,6 @@ jobs:
       - name: Copy JAR to root (for Dockerfile)
         run: cp build/libs/*.jar ./app.jar
 
-      - name: Get latest tag
-        id: get_tag
-        run: |
-          git fetch --tags
-          TAG=$(git tag --sort=-creatordate | head -n 1 || echo "v0.0.0")
-          echo "Latest tag: $TAG"
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-
       - name: Tag current 'latest' Docker image as 'prev'
         env:
           IMAGE: ${{ secrets.DOCKER_USERNAME }}/nexterview
@@ -63,6 +55,14 @@ jobs:
           docker pull $IMAGE:latest
           docker tag $IMAGE:latest $IMAGE:prev
           docker push $IMAGE:prev
+
+      - name: Get latest tag
+        id: get_tag
+        run: |
+          git fetch --tags
+          TAG=$(git tag --sort=-creatordate | head -n 1 || echo "v0.0.0")
+          echo "Latest tag: $TAG"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
       - name: Build and Push Docker Image with version and latest tag
         run: |
@@ -115,8 +115,8 @@ jobs:
               sleep 1
             done
             
-            echo "⏳ Waiting for app to start (up to 10 seconds)..."
-            sleep 10
+            echo "⏳ Waiting for app to start (up to 20 seconds)..."
+            sleep 20
             
             echo "🔍 Checking application health on localhost:80"
             curl -s localhost:80 > /dev/null
@@ -141,8 +141,8 @@ jobs:
                 sleep 1
               done
             
-              echo "⏳ Waiting for app to start (up to 10 seconds)..."
-              sleep 10
+              echo "⏳ Waiting for app to start (up to 20 seconds)..."
+              sleep 20
 
               echo "🔍 Checking rollback application health on localhost:80"
               curl -s localhost:80 > /dev/null
