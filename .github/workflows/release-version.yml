@@ -40,7 +40,7 @@ jobs:
           echo "patch=${parts[2]}" >> $GITHUB_OUTPUT
 
       - name: Determine next version
-        id: bump_version
+        id: set_version
         run: |
           major=${{ steps.parse_version.outputs.major }}
           minor=${{ steps.parse_version.outputs.minor }}
