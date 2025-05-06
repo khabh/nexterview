@@ -23,6 +23,7 @@ public class PromptAccessLimiter {
         this.redisTemplate = redisTemplate;
     }
 
+    
     public void checkAccessOrThrow(String clientIp) {
         String lockKey = LOCK_PREFIX + clientIp;
 
