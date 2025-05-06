@@ -65,13 +65,20 @@ jobs:
           new_version="v${major}.${minor}.${patch}"
           echo "next=$new_version" >> $GITHUB_OUTPUT
 
-      - name: Create and push new tag without identity
+      - name: Push tag using GitHub API
         env:
           TAG: ${{ steps.bump_version.outputs.next }}
+          PAT: ${{ secrets.PAT }}
         run: |
-          git remote set-url origin https://x-access-token:${{ secrets.PAT }}@github.com/${{ github.repository }}
-          git tag $TAG
-          git push origin $TAG
+          SHA=$(git rev-parse HEAD)
+
+          curl -X POST -H "Authorization: token $PAT" \
+            -d "{\"tag\":\"$TAG\", \"message\":\"Release $TAG\", \"object\":\"$SHA\", \"type\":\"commit\"}" \
+            https://api.github.com/repos/${{ github.repository }}/git/tags
+
+          curl -X POST -H "Authorization: token $PAT" \
+            -d "{\"ref\":\"refs/tags/$TAG\", \"sha\":\"$SHA\"}" \
+            https://api.github.com/repos/${{ github.repository }}/git/refs
 
       - name: Show current git version
         run: |
