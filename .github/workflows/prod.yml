@@ -86,9 +86,50 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
+          #          script: |
+          #            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+          #            docker pull ${{ secrets.DOCKER_USERNAME }}/nexterview:latest
+          #            docker stop nexterview-app || true
+          #            docker rm nexterview-app || true
+          #            docker run -d --name nexterview-app --network app-network -p 80:8080 ${{ secrets.DOCKER_USERNAME }}/nexterview:latest
           script: |
             docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+            
+            echo "🚀 Pulling latest image"
             docker pull ${{ secrets.DOCKER_USERNAME }}/nexterview:latest
+            
+            echo "🛑 Stopping and removing existing container (if any)"
             docker stop nexterview-app || true
             docker rm nexterview-app || true
+            
+            echo "🏗️ Running latest container"
             docker run -d --name nexterview-app --network app-network -p 80:8080 ${{ secrets.DOCKER_USERNAME }}/nexterview:latest
+            
+            echo "⏳ Waiting 10 seconds for container to start..."
+            sleep 10
+            
+            echo "📋 Checking if container is running"
+            if ! docker ps | grep -q nexterview-app; then
+              echo "❌ Failed to start 'latest' image. Printing logs..."
+              docker logs nexterview-app || echo "No logs available"
+            
+              echo "🔁 Rolling back to 'prev' image"
+              docker rm nexterview-app || true
+              docker pull ${{ secrets.DOCKER_USERNAME }}/nexterview:prev
+              docker run -d --name nexterview-app --network app-network -p 80:8080 ${{ secrets.DOCKER_USERNAME }}/nexterview:prev
+            
+              echo "⏳ Waiting 10 seconds for rollback container to start..."
+              sleep 10
+            
+              if ! docker ps | grep -q nexterview-app; then
+                echo "❌ Rollback to 'prev' image also failed. Printing logs..."
+                docker logs nexterview-app || echo "No logs available"
+              else
+                echo "✅ Rollback successful. 'prev' image is now running."
+                docker tag ${{ secrets.DOCKER_USERNAME }}/nexterview:prev ${{ secrets.DOCKER_USERNAME }}/nexterview:latest
+                docker push ${{ secrets.DOCKER_USERNAME }}/nexterview:latest
+              fi
+              exit 1
+            else
+              echo "✅ 'latest' image started successfully."
+            fi
