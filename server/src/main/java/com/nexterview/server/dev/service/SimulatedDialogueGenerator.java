@@ -1,7 +1,9 @@
-package com.nexterview.server.service;
+package com.nexterview.server.dev.service;
 
 import com.nexterview.server.domain.CustomizedPrompt;
 import com.nexterview.server.domain.PromptComponent;
+import com.nexterview.server.service.DialogueGenerator;
+import com.nexterview.server.service.GeneratedDialogues;
 import com.nexterview.server.service.dto.response.GeneratedDialogueDto;
 import java.util.ArrayList;
 import java.util.List;
