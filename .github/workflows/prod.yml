@@ -47,11 +47,43 @@ jobs:
       - name: Copy JAR to root (for Dockerfile)
         run: cp build/libs/*.jar ./app.jar
 
-      - name: Build Docker Image
-        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/nexterview:latest .
+      - name: Tag current 'latest' Docker image as 'prev'
+        env:
+          IMAGE: ${{ secrets.DOCKER_USERNAME }}/nexterview
+        run: |
+          echo "⏪ Tagging current 'latest' as 'prev'"
+          docker pull $IMAGE:latest
+          docker tag $IMAGE:latest $IMAGE:prev
+          docker push $IMAGE:prev
 
-      - name: Push Docker Image
-        run: docker push ${{ secrets.DOCKER_USERNAME }}/nexterview:latest
+      - name: Get latest tag
+        id: get_tag
+        run: |
+          git fetch --tags
+          TAG=$(git tag --sort=-creatordate | head -n 1 || echo "v0.0.0")
+          echo "Latest tag: $TAG"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Push tag using GitHub API
+        env:
+          TAG: ${{ steps.get_tag.outputs.tag }}
+          PAT: ${{ secrets.PAT }}
+        run: |
+          SHA=$(git rev-parse HEAD)
+          curl -X PATCH -H "Authorization: token $PAT" \
+            -H "Content-Type: application/json" \
+            -d "{\"sha\": \"$SHA\", \"force\": true}" \
+            https://api.github.com/repos/${{ github.repository }}/git/refs/tags/$TAG
+
+      - name: Build and Push Docker Image with version and latest tag
+        run: |
+          IMAGE=${{ secrets.DOCKER_USERNAME }}/nexterview
+          VERSION="${{ steps.get_tag.outputs.tag }}"
+
+          docker build -t $IMAGE:$VERSION .
+          docker tag $IMAGE:$VERSION $IMAGE:latest
+          docker push $IMAGE:$VERSION
+          docker push $IMAGE:latest
 
   deploy:
     needs: build
@@ -66,8 +98,100 @@ jobs:
           key: ${{ secrets.EC2_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }} --password-stdin
+
+            echo "🚀 Pulling latest image"
             docker pull ${{ secrets.DOCKER_USERNAME }}/nexterview:latest
+
+            echo "🛑 Stopping and removing existing container (if any)"
             docker stop nexterview-app || true
             docker rm nexterview-app || true
+
+            echo "🏗️ Running latest container"
             docker run -d --name nexterview-app --network app-network -p 80:8080 ${{ secrets.DOCKER_USERNAME }}/nexterview:latest
+
+            echo "⏳ Waiting for container to start (up to 20 seconds)..."
+            for i in {1..20}; do
+              if docker ps | grep -q nexterview-app; then
+                break
+              fi
+              echo "Waiting..."
+              sleep 1
+            done
+            
+            echo "⏳ Waiting for app to respond on localhost:80 (up to 30 seconds)..."
+            for i in {1..30}; do
+              if curl -s localhost:80 > /dev/null; then
+                break
+              fi
+              echo "Waiting... ($i)"
+              sleep 1
+            done
+            
+            if curl -s localhost:80 > /dev/null; then
+              echo "✅ App is responding on port 80. Deployment succeeded."
+            else
+              echo "❌ Failed to start 'latest' image. Printing logs..."
+              docker logs nexterview-app || echo "No logs available"
+            
+              echo "🔁 Rolling back to 'prev' image"
+              docker rm nexterview-app || true
+              docker pull ${{ secrets.DOCKER_USERNAME }}/nexterview:prev
+              docker run -d --name nexterview-app --network app-network -p 80:8080 ${{ secrets.DOCKER_USERNAME }}/nexterview:prev
+
+              echo "⏳ Waiting 20 seconds for rollback app to start..."
+              for i in {1..20}; do
+                if docker ps | grep -q nexterview-app; then
+                  echo "✅ Container is up!"
+                  break
+                fi
+                echo "Waiting..."
+                sleep 1
+              done
+            
+              echo "⏳ Waiting for rollback app to respond on localhost:80 (up to 30 seconds)..."
+              for i in {1..30}; do
+                if curl -s localhost:80 > /dev/null; then
+                  break
+                fi
+                echo "Waiting... ($i)"
+                sleep 1
+              done
+            
+              if curl -s localhost:80 > /dev/null; then
+                echo "✅ Rollback succeeded. Retagging prev as latest..."
+                docker tag ${{ secrets.DOCKER_USERNAME }}/nexterview:prev ${{ secrets.DOCKER_USERNAME }}/nexterview:latest
+                docker push ${{ secrets.DOCKER_USERNAME }}/nexterview:latest
+              else
+                echo "❌ Rollback failed. Neither latest nor prev responded."
+                docker logs nexterview-app || echo "No logs available"
+              fi
+              exit 1
+            fi
+  cleanup:
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: ${{ always() }}
+
+    steps:
+      - name: Remove old images
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            echo "🧹 Removing unused docker images..."
+            RUNNING_IMAGE_IDS=$(docker ps --format '{{.Image}}' | xargs -n1 docker inspect --format '{{.Id}}')
+
+            ALL_IMAGE_IDS=$(docker images ${{ secrets.DOCKER_USERNAME }}/nexterview --format '{{.ID}}' | sort | uniq)
+
+            for IMAGE_ID in $ALL_IMAGE_IDS; do
+              if ! echo "$RUNNING_IMAGE_IDS" | grep -q "$IMAGE_ID"; then
+                echo "🗑️ Deleting unused image $IMAGE_ID"
+                docker rmi "$IMAGE_ID"
+              else
+                echo "🔒 Skipping image in use: $IMAGE_ID"
+              fi
+            done
