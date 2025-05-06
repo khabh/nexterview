@@ -118,18 +118,29 @@ jobs:
               docker pull ${{ secrets.DOCKER_USERNAME }}/nexterview:prev
               docker run -d --name nexterview-app --network app-network -p 80:8080 ${{ secrets.DOCKER_USERNAME }}/nexterview:prev
             
-              echo "⏳ Waiting 10 seconds for rollback container to start..."
+            echo "🔍 Checking application health on localhost:80"
+            if curl -s --fail http://localhost:80 > /dev/null; then
+              echo "✅ App is responding on port 80. Deployment succeeded."
+            else
+              echo "❌ App did not respond. Rolling back to prev image..."
+
+              docker rm -f nexterview-app || true
+              docker pull ${{ secrets.DOCKER_USERNAME }}/nexterview:prev
+
+              echo "♻️ Running rollback container"
+              docker run -d --name nexterview-app --network app-network -p 80:8080 ${{ secrets.DOCKER_USERNAME }}/nexterview:prev
+
+              echo "⏳ Waiting 10 seconds for rollback app to start..."
               sleep 10
-            
-              if ! docker ps | grep -q nexterview-app; then
-                echo "❌ Rollback to 'prev' image also failed. Printing logs..."
-                docker logs nexterview-app || echo "No logs available"
-              else
-                echo "✅ Rollback successful. 'prev' image is now running."
+
+              echo "🔍 Checking rollback application health on localhost:80"
+              if curl -s --fail http://localhost:80 > /dev/null; then
+                echo "✅ Rollback succeeded. Retagging prev as latest..."
                 docker tag ${{ secrets.DOCKER_USERNAME }}/nexterview:prev ${{ secrets.DOCKER_USERNAME }}/nexterview:latest
                 docker push ${{ secrets.DOCKER_USERNAME }}/nexterview:latest
+              else
+                echo "❌ Rollback failed. Neither latest nor prev responded."
+                docker logs nexterview-app || echo "No logs available"
               fi
               exit 1
-            else
-              echo "✅ 'latest' image started successfully."
             fi
