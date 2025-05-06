@@ -119,7 +119,7 @@ jobs:
               docker run -d --name nexterview-app --network app-network -p 80:8080 ${{ secrets.DOCKER_USERNAME }}/nexterview:prev
             
             echo "🔍 Checking application health on localhost:80"
-            if curl -s --fail http://localhost:80 > /dev/null; then
+            if nc -z localhost 80; then
               echo "✅ App is responding on port 80. Deployment succeeded."
             else
               echo "❌ App did not respond. Rolling back to prev image..."
@@ -134,7 +134,7 @@ jobs:
               sleep 10
 
               echo "🔍 Checking rollback application health on localhost:80"
-              if curl -s --fail http://localhost:80 > /dev/null; then
+              if  if nc -z localhost 80; then
                 echo "✅ Rollback succeeded. Retagging prev as latest..."
                 docker tag ${{ secrets.DOCKER_USERNAME }}/nexterview:prev ${{ secrets.DOCKER_USERNAME }}/nexterview:latest
                 docker push ${{ secrets.DOCKER_USERNAME }}/nexterview:latest
