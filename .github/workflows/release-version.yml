@@ -5,82 +5,68 @@ on:
     branches: [ "test" ]
 
 jobs:
-  generate-version:
+  release:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
+    outputs:
+      version: ${{ steps.set_version.outputs.version }}
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - name: Checkout code
+        uses: actions/checkout@v3
 
       - name: Get latest tag
-        id: get_tag
+        id: get_latest_tag
         run: |
           TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
           echo "Latest tag: $TAG"
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
-      - name: Parse version
-        id: parse_version
+      - name: Determine version bump
+        id: determine_bump
         run: |
-          version="${{ steps.get_tag.outputs.tag }}"
-          version="${version#v}"
-          IFS='.' read -ra parts <<< "$version"
-          echo "major=${parts[0]}" >> $GITHUB_OUTPUT
-          echo "minor=${parts[1]}" >> $GITHUB_OUTPUT
-          echo "patch=${parts[2]}" >> $GITHUB_OUTPUT
+          LABELS="${{ toJson(github.event.pull_request.labels) }}"
+          if echo "$LABELS" | grep -q "version:major"; then
+            echo "bump=major" >> "$GITHUB_OUTPUT"
+          elif echo "$LABELS" | grep -q "version:minor"; then
+            echo "bump=minor" >> "$GITHUB_OUTPUT"
+          else
+            echo "bump=patch" >> "$GITHUB_OUTPUT"
+          fi
 
-      - name: Determine next version
-        id: bump_version
+      - name: Calculate next version
+        id: set_version
         run: |
-          major=${{ steps.parse_version.outputs.major }}
-          minor=${{ steps.parse_version.outputs.minor }}
-          patch=${{ steps.parse_version.outputs.patch }}
-          
-          echo "📦 Fetching labels from PR..."
+          VERSION=${{ steps.get_latest_tag.outputs.tag }}
+          IFS='.' read -r -a parts <<< "${VERSION#v}"
 
-          response=$(curl -s -H "Authorization: token ${{ secrets.PAT }}" \
-            https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/labels)
+          major=${parts[0]}
+          minor=${parts[1]}
+          patch=${parts[2]}
 
-          echo "🔎 Response from GitHub API:"
-          echo "$response"
+          bump=${{ steps.determine_bump.outputs.bump }}
 
-          labels=$(echo "$response" | jq -r '.[].name')
-
-          if echo "$labels" | grep -q "version:major"; then
+          if [[ "$bump" == "major" ]]; then
             major=$((major + 1))
             minor=0
             patch=0
-          elif echo "$labels" | grep -q "version:minor"; then
+          elif [[ "$bump" == "minor" ]]; then
             minor=$((minor + 1))
             patch=0
-          elif echo "$labels" | grep -q "version:patch"; then
-            patch=$((patch + 1))
           else
-            echo "❌ No version label found"
-            exit 1
+            patch=$((patch + 1))
           fi
 
-          new_version="v${major}.${minor}.${patch}"
-          echo "next=$new_version" >> $GITHUB_OUTPUT
+          NEXT_VERSION="v$major.$minor.$patch"
+          echo "✅ Next version: $NEXT_VERSION"
+          echo "version=$NEXT_VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Push tag using GitHub API
-        env:
-          TAG: ${{ steps.bump_version.outputs.next }}
-          PAT: ${{ secrets.PAT }}
-        run: |
-          SHA=$(git rev-parse HEAD)
+      - name: Write version to file
+        run: echo "${{ steps.set_version.outputs.version }}" > version.txt
 
-          curl -X POST -H "Authorization: token $PAT" \
-            -d "{\"tag\":\"$TAG\", \"message\":\"Release $TAG\", \"object\":\"$SHA\", \"type\":\"commit\"}" \
-            https://api.github.com/repos/${{ github.repository }}/git/tags
-
-          curl -X POST -H "Authorization: token $PAT" \
-            -d "{\"ref\":\"refs/tags/$TAG\", \"sha\":\"$SHA\"}" \
-            https://api.github.com/repos/${{ github.repository }}/git/refs
-
-      - name: Show current git version
-        run: |
-          LATEST_TAG=$(git describe --tags --abbrev=0)
-          echo "✅ Current version is: $LATEST_TAG"
+      - name: Upload version artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: version
+          path: version.txt
