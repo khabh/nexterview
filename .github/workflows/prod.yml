@@ -55,6 +55,15 @@ jobs:
           echo "Latest tag: $TAG"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
+      - name: Tag current 'latest' Docker image as 'prev'
+        env:
+          IMAGE: ${{ secrets.DOCKER_USERNAME }}/nexterview
+        run: |
+          echo "⏪ Tagging current 'latest' as 'prev'"
+          docker pull $IMAGE:latest
+          docker tag $IMAGE:latest $IMAGE:prev
+          docker push $IMAGE:prev
+
       - name: Build and Push Docker Image with version and latest tag
         run: |
           IMAGE=${{ secrets.DOCKER_USERNAME }}/nexterview
