@@ -43,7 +43,7 @@ jobs:
           echo "patch=${parts[2]}" >> $GITHUB_OUTPUT
 
       - name: Determine next version
-        id: set_version
+        id: get_next_version
         run: |
           major=${{ steps.parse_version.outputs.major }}
           minor=${{ steps.parse_version.outputs.minor }}
@@ -74,7 +74,7 @@ jobs:
       - name: Set version tag using GitHub REST API
         id: set_version
         run: |
-          VERSION="${{ steps.set_version.outputs.version }}"
+          VERSION="${{ steps.get_next_version.outputs.version }}"
 
           curl -X POST \
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
