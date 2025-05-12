@@ -43,3 +43,16 @@ INSERT INTO DIALOGUE(question, answer, interview_id)
 VALUES ('왜 프론트엔드 직무를 선택하셨나요?', '사용자와 가장 가까운 영역에서 가치를 전달할 수 있다는 점에 매력을 느꼈기 때문입니다.', 2),
        ('React에서 상태 관리를 어떻게 하시나요?', '작은 프로젝트에서는 useState와 Context API를, 복잡한 경우에는 Redux를 사용합니다.', 2),
        ('협업에서 발생한 갈등을 어떻게 해결했나요?', '정기적인 회고를 통해 의견을 공유하고, 중재자의 역할을 자처해 해결했습니다.', 2);
+
+-- 세 번째 인터뷰
+INSERT INTO INTERVIEW(title, guest_password)
+VALUES ('스타트업 프론트엔드 면접', "1234");
+
+INSERT INTO PROMPT_ANSWER(query_id, interview_id, answer)
+VALUES (2, 3, '장점은 사용자 경험을 고려한 UI 설계이며, 단점은 아직 테스트 코드 작성에 익숙하지 않다는 점입니다.'),
+       (3, 3, '실시간 채팅 기능 구현 중 WebSocket 연결 문제를 해결하며, 서버-클라이언트 간 메시지 처리 방식을 개선한 경험이 있습니다.');
+
+INSERT INTO DIALOGUE(question, answer, interview_id)
+VALUES ('왜 프론트엔드 직무를 선택하셨나요?', '사용자와 가장 가까운 영역에서 가치를 전달할 수 있다는 점에 매력을 느꼈기 때문입니다.', 3),
+       ('React에서 상태 관리를 어떻게 하시나요?', '작은 프로젝트에서는 useState와 Context API를, 복잡한 경우에는 Redux를 사용합니다.', 3),
+       ('협업에서 발생한 갈등을 어떻게 해결했나요?', '정기적인 회고를 통해 의견을 공유하고, 중재자의 역할을 자처해 해결했습니다.', 3);
