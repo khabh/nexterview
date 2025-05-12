@@ -223,7 +223,6 @@ class PromptServiceTest {
                 .isInstanceOf(NexterviewException.class)
                 .hasMessage(NexterviewErrorCode.CHAT_API_UNAVAILABLE.getMessage());
         assertThat(redisTemplate.hasKey(accessKey)).isFalse();
-        assertThat(redisTemplate.hasKey(lockKey)).isFalse();
     }
 
     @Test

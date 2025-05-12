@@ -35,17 +35,11 @@ public class PromptService {
     private final TokenQuotaRepository tokenQuotaRepository;
 
     public List<GeneratedDialogueDto> generateDialoguesForGuest(GenerateDialoguesRequest request, String clientIp) {
-        promptAccessLimiter.checkAccessOrThrow(clientIp);
-        try {
-            GeneratedDialogues dialogues = generateDialogues(request);
-            promptAccessLimiter.commitAccess(clientIp);
+        promptAccessLimiter.validateAccess(clientIp);
+        GeneratedDialogues dialogues = generateDialogues(request);
+        promptAccessLimiter.markAccessed(clientIp);
 
-            return dialogues.dialogues();
-        } catch (NexterviewException exception) {
-            promptAccessLimiter.rollbackAccess(clientIp);
-
-            throw exception;
-        }
+        return dialogues.dialogues();
     }
 
     @Transactional
