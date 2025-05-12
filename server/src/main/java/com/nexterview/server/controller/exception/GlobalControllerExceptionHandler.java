@@ -7,7 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.InternalAuthenticationServiceException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -37,9 +37,9 @@ class GlobalControllerExceptionHandler {
                 .body(new ErrorResponse(errorCode.name(), errorMessage));
     }
 
-    @ExceptionHandler(InternalAuthenticationServiceException.class)
+    @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ErrorResponse> handleAuthenticationException(
-            InternalAuthenticationServiceException exception
+            AuthenticationException exception
     ) {
         log.error(exception.getMessage(), exception);
 
