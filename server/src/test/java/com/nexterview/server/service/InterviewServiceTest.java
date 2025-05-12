@@ -234,4 +234,19 @@ class InterviewServiceTest {
                 .isInstanceOf(NexterviewException.class)
                 .hasMessageContaining(NexterviewErrorCode.INTERVIEW_GUEST_PASSWORD_MISMATCH.getMessage());
     }
+
+    @Test
+    void 유저의_인터뷰_목록을_조회한다() {
+        User user = userFixture.getAuthenticatedUser("abcd@gmail.com", "potato", "potato123!");
+
+        interviewFixture.getSavedUserInterview("인터뷰1", user);
+        interviewFixture.getSavedUserInterview("인터뷰2", user);
+
+        List<InterviewDto> result = interviewService.findUserInterviews();
+
+        assertThat(result).hasSize(2);
+        assertThat(result)
+                .extracting(InterviewDto::title)
+                .containsExactlyInAnyOrder("인터뷰1", "인터뷰2");
+    }
 }

@@ -246,4 +246,31 @@ class InterviewControllerTest {
                 .andExpect(jsonPath("$.dialogues.length()").value(2));
     }
 
+    @Test
+    @WithMockUser
+    void 사용자_인터뷰_목록_조회() throws Exception {
+        InterviewDto interview1 = new InterviewDto(
+                1L,
+                "자바 인터뷰",
+                List.of(new PromptAnswerDto(1L, 1L, "자바란?", "객체지향 언어입니다.")),
+                List.of(new DialogueDto(1L, "OOP의 4가지 특징?", "캡슐화, 상속, 다형성, 추상화"))
+        );
+
+        InterviewDto interview2 = new InterviewDto(
+                2L,
+                "네트워크 인터뷰",
+                List.of(new PromptAnswerDto(2L, 2L, "HTTP란?", "HyperText Transfer Protocol입니다.")),
+                List.of(new DialogueDto(2L, "HTTP와 HTTPS 차이?", "보안 여부입니다."))
+        );
+
+        when(interviewService.findUserInterviews()).thenReturn(List.of(interview1, interview2));
+
+        mockMvc.perform(get("/api/user-interviews"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].id").value(1))
+                .andExpect(jsonPath("$[0].title").value("자바 인터뷰"))
+                .andExpect(jsonPath("$[1].id").value(2))
+                .andExpect(jsonPath("$[1].title").value("네트워크 인터뷰"));
+    }
 }
