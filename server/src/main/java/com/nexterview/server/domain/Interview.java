@@ -91,6 +91,11 @@ public class Interview {
         }
     }
 
+    public void setTitle(String title) {
+        validateTitle(title);
+        this.title = title;
+    }
+
     public void addPromptAnswer(PromptAnswer promptAnswer) {
         promptAnswers.add(promptAnswer);
     }
@@ -117,5 +122,13 @@ public class Interview {
         if (!guestPassword.equals(password)) {
             throw new NexterviewException(NexterviewErrorCode.INTERVIEW_GUEST_PASSWORD_MISMATCH);
         }
+    }
+
+    public void clearPromptAnswers() {
+        this.promptAnswers.clear();
+    }
+
+    public void clearDialogues() {
+        this.dialogues.clear();
     }
 }

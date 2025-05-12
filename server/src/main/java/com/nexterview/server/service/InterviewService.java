@@ -16,9 +16,11 @@ import com.nexterview.server.repository.PromptQueryRepository;
 import com.nexterview.server.repository.PromptRepository;
 import com.nexterview.server.service.dto.request.DialogueRequest;
 import com.nexterview.server.service.dto.request.GuestInterviewRequest;
+import com.nexterview.server.service.dto.request.GuestInterviewUpdateRequest;
 import com.nexterview.server.service.dto.request.InterviewPasswordRequest;
 import com.nexterview.server.service.dto.request.PromptAnswerRequest;
 import com.nexterview.server.service.dto.request.UserInterviewRequest;
+import com.nexterview.server.service.dto.request.UserInterviewUpdateRequest;
 import com.nexterview.server.service.dto.response.InterviewDto;
 import com.nexterview.server.service.dto.response.InterviewPreviewDto;
 import com.nexterview.server.service.dto.response.InterviewTypeDto;
@@ -61,6 +63,40 @@ public class InterviewService {
         return InterviewDto.of(interview);
     }
 
+    @Transactional
+    public InterviewDto updateUserInterview(UserInterviewUpdateRequest request) {
+        Interview interview = findInterviewWithCurrentUser(request.interviewId());
+        interview.setTitle(request.title());
+        updateInterviewPromptAnswers(interview, request.promptId(), request.promptAnswers());
+        updateInterviewDialogues(interview, request.dialogues());
+        interviewRepository.save(interview);
+
+        return InterviewDto.of(interview);
+    }
+
+    @Transactional
+    public InterviewDto updateGuestInterview(GuestInterviewUpdateRequest request) {
+        Interview interview = findInterviewWithPassword(request.interviewId(), request.guestPassword());
+        interview.setTitle(request.title());
+        updateInterviewPromptAnswers(interview, request.promptId(), request.promptAnswers());
+        updateInterviewDialogues(interview, request.dialogues());
+        interviewRepository.save(interview);
+
+        return InterviewDto.of(interview);
+    }
+
+    private void updateInterviewPromptAnswers(
+            Interview interview, Long promptId, List<PromptAnswerRequest> promptAnswers
+    ) {
+        interview.clearPromptAnswers();
+        createPromptAnswers(interview, promptId, promptAnswers);
+    }
+
+    private void updateInterviewDialogues(Interview interview, List<DialogueRequest> dialogues) {
+        interview.clearDialogues();
+        createDialogues(interview, dialogues);
+    }
+
     private void createPromptAnswers(
             Interview interview, Long promptId, List<PromptAnswerRequest> requests
     ) {
@@ -92,9 +128,7 @@ public class InterviewService {
     }
 
     public InterviewDto findUserInterview(Long interviewId) {
-        Interview interview = findInterview(interviewId, InterviewType.USER);
-        User user = authenticatedUserContext.getUser();
-        interview.validateOwner(user);
+        Interview interview = findInterviewWithCurrentUser(interviewId);
 
         return InterviewDto.of(interview);
     }
@@ -109,9 +143,23 @@ public class InterviewService {
     }
 
     public InterviewDto findGuestInterview(Long interviewId, InterviewPasswordRequest request) {
-        Interview interview = findInterview(interviewId, InterviewType.GUEST);
-        interview.validatePassword(request.password());
+        Interview interview = findInterviewWithPassword(interviewId, request.password());
         return InterviewDto.of(interview);
+    }
+
+    private Interview findInterviewWithCurrentUser(Long interviewId) {
+        User user = authenticatedUserContext.getUser();
+        Interview interview = findInterview(interviewId, InterviewType.USER);
+        interview.validateOwner(user);
+
+        return interview;
+    }
+
+    private Interview findInterviewWithPassword(Long interviewId, String password) {
+        Interview interview = findInterview(interviewId, InterviewType.GUEST);
+        interview.validatePassword(password);
+
+        return interview;
     }
 
     private Interview findInterview(Long interviewId, InterviewType interviewType) {
