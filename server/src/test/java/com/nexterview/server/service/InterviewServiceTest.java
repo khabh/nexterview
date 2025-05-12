@@ -22,6 +22,7 @@ import com.nexterview.server.service.dto.request.PromptAnswerRequest;
 import com.nexterview.server.service.dto.request.UserInterviewRequest;
 import com.nexterview.server.service.dto.response.DialogueDto;
 import com.nexterview.server.service.dto.response.InterviewDto;
+import com.nexterview.server.service.dto.response.InterviewPreviewDto;
 import com.nexterview.server.service.dto.response.InterviewTypeDto;
 import com.nexterview.server.service.dto.response.PromptAnswerDto;
 import com.nexterview.server.util.DatabaseCleaner;
@@ -233,5 +234,20 @@ class InterviewServiceTest {
         assertThatThrownBy(() -> interviewService.findGuestInterview(guestInterview.getId(), wrongPasswordRequest))
                 .isInstanceOf(NexterviewException.class)
                 .hasMessageContaining(NexterviewErrorCode.INTERVIEW_GUEST_PASSWORD_MISMATCH.getMessage());
+    }
+
+    @Test
+    void 유저의_인터뷰_목록을_조회한다() {
+        User user = userFixture.getAuthenticatedUser("abcd@gmail.com", "potato", "potato123!");
+
+        interviewFixture.getSavedUserInterview("인터뷰1", user);
+        interviewFixture.getSavedUserInterview("인터뷰2", user);
+
+        List<InterviewPreviewDto> result = interviewService.findUserInterviews();
+
+        assertThat(result).hasSize(2);
+        assertThat(result)
+                .extracting(InterviewPreviewDto::title)
+                .containsExactlyInAnyOrder("인터뷰1", "인터뷰2");
     }
 }

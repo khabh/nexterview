@@ -16,6 +16,7 @@ import com.nexterview.server.service.dto.request.PromptAnswerRequest;
 import com.nexterview.server.service.dto.request.UserInterviewRequest;
 import com.nexterview.server.service.dto.response.DialogueDto;
 import com.nexterview.server.service.dto.response.InterviewDto;
+import com.nexterview.server.service.dto.response.InterviewPreviewDto;
 import com.nexterview.server.service.dto.response.InterviewTypeDto;
 import com.nexterview.server.service.dto.response.PromptAnswerDto;
 import java.util.List;
@@ -246,4 +247,27 @@ class InterviewControllerTest {
                 .andExpect(jsonPath("$.dialogues.length()").value(2));
     }
 
+    @Test
+    @WithMockUser
+    void 사용자_인터뷰_목록_조회() throws Exception {
+        InterviewPreviewDto interview1 = new InterviewPreviewDto(
+                1L,
+                "자바 인터뷰",
+                List.of("자바란?", "OOP의 4가지 특징?"));
+        InterviewPreviewDto interview2 = new InterviewPreviewDto(
+                2L,
+                "네트워크 인터뷰",
+                List.of("HTTP란?", "HTTP와 HTTPS 차이?")
+        );
+
+        when(interviewService.findUserInterviews()).thenReturn(List.of(interview1, interview2));
+
+        mockMvc.perform(get("/api/user-interviews"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].id").value(1))
+                .andExpect(jsonPath("$[0].title").value("자바 인터뷰"))
+                .andExpect(jsonPath("$[1].id").value(2))
+                .andExpect(jsonPath("$[1].title").value("네트워크 인터뷰"));
+    }
 }

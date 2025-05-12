@@ -5,8 +5,10 @@ import com.nexterview.server.service.dto.request.GuestInterviewRequest;
 import com.nexterview.server.service.dto.request.InterviewPasswordRequest;
 import com.nexterview.server.service.dto.request.UserInterviewRequest;
 import com.nexterview.server.service.dto.response.InterviewDto;
+import com.nexterview.server.service.dto.response.InterviewPreviewDto;
 import com.nexterview.server.service.dto.response.InterviewTypeDto;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -32,6 +34,13 @@ public class InterviewController {
         return interviewService.saveGuestInterview(request);
     }
 
+    @PostMapping("/guest-interviews/{interviewId}")
+    public InterviewDto getGuestInterview(
+            @PathVariable Long interviewId, @Valid @RequestBody InterviewPasswordRequest request
+    ) {
+        return interviewService.findGuestInterview(interviewId, request);
+    }
+
     @GetMapping("/interviews/{interviewId}/type")
     public InterviewTypeDto getInterviewType(@PathVariable Long interviewId) {
         return interviewService.getInterviewType(interviewId);
@@ -42,10 +51,8 @@ public class InterviewController {
         return interviewService.findUserInterview(interviewId);
     }
 
-    @PostMapping("/guest-interviews/{interviewId}")
-    public InterviewDto getGuestInterview(
-            @PathVariable Long interviewId, @Valid @RequestBody InterviewPasswordRequest request
-    ) {
-        return interviewService.findGuestInterview(interviewId, request);
+    @GetMapping("/user-interviews")
+    public List<InterviewPreviewDto> getUserInterviews() {
+        return interviewService.findUserInterviews();
     }
 }

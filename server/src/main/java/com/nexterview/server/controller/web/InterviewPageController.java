@@ -19,4 +19,9 @@ public class InterviewPageController {
 
         return "interview-view";
     }
+
+    @GetMapping("/interviews/me")
+    public String showUserInterviewsPage() {
+        return "user-interviews-view";
+    }
 }
