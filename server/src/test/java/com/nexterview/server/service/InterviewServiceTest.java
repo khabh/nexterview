@@ -19,6 +19,7 @@ import com.nexterview.server.repository.PromptAnswerRepository;
 import com.nexterview.server.repository.PromptQueryRepository;
 import com.nexterview.server.repository.PromptRepository;
 import com.nexterview.server.service.dto.request.DialogueRequest;
+import com.nexterview.server.service.dto.request.GuestInterviewDeleteRequest;
 import com.nexterview.server.service.dto.request.GuestInterviewRequest;
 import com.nexterview.server.service.dto.request.GuestInterviewUpdateRequest;
 import com.nexterview.server.service.dto.request.InterviewPasswordRequest;
@@ -387,5 +388,89 @@ class InterviewServiceTest {
         assertThatCode(() -> interviewService.updateUserInterview(request))
                 .isInstanceOf(NexterviewException.class)
                 .hasMessageContaining(NexterviewErrorCode.INVALID_INTERVIEW_ACCESS.getMessage());
+    }
+
+    @Test
+    void 사용자_인터뷰를_삭제하면_관련_답변과_문답도_삭제된다() {
+        User user = userFixture.getAuthenticatedUser("test@gmail.com", "test", "test1234!");
+
+        Interview interview = interviewFixture.getSavedUserInterview("title", user);
+        Long interviewId = interview.getId();
+
+        Prompt prompt = new Prompt("백엔드 면접", "백엔드 관련 질문을 생성해주세요.");
+        promptRepository.save(prompt);
+
+        PromptQuery query = new PromptQuery("가장 많이 사용한 언어는?", prompt);
+        promptQueryRepository.save(query);
+
+        promptAnswerRepository.save(new PromptAnswer("answer", query, interview));
+        dialogueRepository.save(new Dialogue("question", "answer", interview));
+
+        interviewService.deleteUserInterview(interviewId);
+
+        assertThat(interviewRepository.findById(interviewId)).isEmpty();
+        assertThat(promptAnswerRepository.findAll()).isEmpty();
+        assertThat(dialogueRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    void 게스트_인터뷰를_삭제하면_관련_답변과_문답도_삭제된다() {
+        Interview interview = interviewFixture.getSavedGuestInterview();
+        Long interviewId = interview.getId();
+        String guestPassword = interview.getGuestPassword();
+
+        Prompt prompt = new Prompt("백엔드 면접", "백엔드 관련 질문을 생성해주세요.");
+        promptRepository.save(prompt);
+
+        PromptQuery query = new PromptQuery("가장 많이 사용한 언어는?", prompt);
+        promptQueryRepository.save(query);
+
+        promptAnswerRepository.save(new PromptAnswer("answer", query, interview));
+        dialogueRepository.save(new Dialogue("question", "answer", interview));
+
+        interviewService.deleteGuestInterview(
+                new GuestInterviewDeleteRequest(interviewId, guestPassword)
+        );
+
+        assertThat(interviewRepository.findById(interviewId)).isEmpty();
+        assertThat(promptAnswerRepository.findAll()).isEmpty();
+        assertThat(dialogueRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    void 다른_유저의_인터뷰를_삭제하면_예외를_던진다() {
+        User interviewOwner = userFixture.getAuthenticatedUser("owner@gmail.com", "owner", "password1!");
+        userFixture.getAuthenticatedUser("attacker@gmail.com", "attacker", "password2!");
+
+        Interview interview = interviewFixture.getSavedUserInterview("title", interviewOwner);
+        Long interviewId = interview.getId();
+
+        assertThatThrownBy(() -> interviewService.deleteUserInterview(interviewId))
+                .isInstanceOf(NexterviewException.class)
+                .hasMessageContaining(NexterviewErrorCode.INVALID_INTERVIEW_ACCESS.getMessage());
+    }
+
+    @Test
+    void 존재하지_않는_사용자_인터뷰를_삭제하면_예외를_던진다() {
+        userFixture.getAuthenticatedUser("owner@gmail.com", "owner", "password1!");
+        Long invalidInterviewId = 9999L;
+
+        assertThatThrownBy(() -> interviewService.deleteUserInterview(invalidInterviewId))
+                .isInstanceOf(NexterviewException.class)
+                .hasMessageContaining(
+                        String.format(NexterviewErrorCode.INTERVIEW_NOT_FOUND.getMessage(), invalidInterviewId));
+    }
+
+    @Test
+    void 잘못된_비밀번호로_게스트_인터뷰를_삭제하면_예외를_던진다() {
+        Interview interview = interviewFixture.getSavedGuestInterview("title", "1234");
+        Long interviewId = interview.getId();
+        String wrongPassword = "2455";
+
+        GuestInterviewDeleteRequest request = new GuestInterviewDeleteRequest(interviewId, wrongPassword);
+
+        assertThatThrownBy(() -> interviewService.deleteGuestInterview(request))
+                .isInstanceOf(NexterviewException.class)
+                .hasMessageContaining(NexterviewErrorCode.INTERVIEW_GUEST_PASSWORD_MISMATCH.getMessage());
     }
 }

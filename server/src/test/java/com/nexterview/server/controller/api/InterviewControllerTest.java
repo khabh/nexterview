@@ -1,7 +1,9 @@
 package com.nexterview.server.controller.api;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -187,7 +189,7 @@ class InterviewControllerTest {
 
     @Test
     @WithMockUser
-    void 사용자_인터뷰_조회() throws Exception {
+    void 유저_인터뷰_조회() throws Exception {
         Long interviewId = 1L;
         InterviewDto response = new InterviewDto(
                 1L,
@@ -250,7 +252,7 @@ class InterviewControllerTest {
 
     @Test
     @WithMockUser
-    void 사용자_인터뷰_목록_조회() throws Exception {
+    void 유저_인터뷰_목록_조회() throws Exception {
         InterviewPreviewDto interview1 = new InterviewPreviewDto(
                 1L,
                 "자바 인터뷰",
@@ -350,5 +352,29 @@ class InterviewControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(interviewId))
                 .andExpect(jsonPath("$.title").value("수정된 백엔드 인터뷰"));
+    }
+
+    @Test
+    void 게스트_인터뷰_삭제() throws Exception {
+        Long interviewId = 1L;
+        InterviewPasswordRequest request = new InterviewPasswordRequest("1234");
+
+        doNothing().when(interviewService).deleteGuestInterview(any());
+
+        mockMvc.perform(delete("/api/guest-interviews/{interviewId}", interviewId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser
+    void 유저_인터뷰_삭제() throws Exception {
+        Long interviewId = 1L;
+
+        doNothing().when(interviewService).deleteUserInterview(interviewId);
+
+        mockMvc.perform(delete("/api/user-interviews/{interviewId}", interviewId))
+                .andExpect(status().isOk());
     }
 }
