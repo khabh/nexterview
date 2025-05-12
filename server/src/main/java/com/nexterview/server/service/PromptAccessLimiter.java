@@ -23,7 +23,7 @@ public class PromptAccessLimiter {
         this.redisTemplate = redisTemplate;
     }
 
-    public void checkAccessOrThrow(String clientIp) {
+    public void validateAccess(String clientIp) {
         String lockKey = LOCK_PREFIX + clientIp;
 
         Boolean lockAcquired = redisTemplate.opsForValue()
@@ -40,7 +40,7 @@ public class PromptAccessLimiter {
         }
     }
 
-    public void commitAccess(String clientIp) {
+    public void markAccessed(String clientIp) {
         String key = PREFIX + clientIp;
 
         LocalDateTime now = LocalDateTime.now(ZONE_ID);
@@ -48,10 +48,6 @@ public class PromptAccessLimiter {
         Duration untilMidnight = Duration.between(now, midnight);
 
         redisTemplate.opsForValue().set(key, MARK_PRESENT, untilMidnight);
-        redisTemplate.delete(LOCK_PREFIX + clientIp);
-    }
-
-    public void rollbackAccess(String clientIp) {
         redisTemplate.delete(LOCK_PREFIX + clientIp);
     }
 }

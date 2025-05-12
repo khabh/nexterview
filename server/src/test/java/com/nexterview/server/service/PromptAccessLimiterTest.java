@@ -34,7 +34,7 @@ class PromptAccessLimiterTest {
     void 잠금_획득에_실패하면_예외를_던진다() {
         redisTemplate.opsForValue().set(lockKey, "1", Duration.ofMinutes(5));
 
-        assertThatThrownBy(() -> limiter.checkAccessOrThrow(ip))
+        assertThatThrownBy(() -> limiter.validateAccess(ip))
                 .isInstanceOf(NexterviewException.class)
                 .hasMessage(NexterviewErrorCode.REQUEST_TEMPORARILY_LOCKED.getMessage());
     }
@@ -43,25 +43,16 @@ class PromptAccessLimiterTest {
     void 접근_기록이_이미_있으면_예외를_던지고_락을_해제한다() {
         redisTemplate.opsForValue().set(accessKey, "1", Duration.ofHours(1));
 
-        assertThatThrownBy(() -> limiter.checkAccessOrThrow(ip))
+        assertThatThrownBy(() -> limiter.validateAccess(ip))
                 .isInstanceOf(NexterviewException.class)
                 .hasMessage(NexterviewErrorCode.GUEST_PROMPT_ACCESS_EXCEEDED.getMessage());
-    }
-
-    @Test
-    void 접근을_롤백한다() {
-        redisTemplate.opsForValue().set(lockKey, "1", Duration.ofMinutes(5));
-
-        limiter.rollbackAccess(ip);
-
-        assertThat(redisTemplate.hasKey(lockKey)).isFalse();
     }
 
     @Test
     void 접근을_커밋한다() {
         redisTemplate.opsForValue().set(lockKey, "1", Duration.ofMinutes(5));
 
-        limiter.commitAccess(ip);
+        limiter.markAccessed(ip);
 
         assertThat(redisTemplate.hasKey(lockKey)).isFalse();
         assertThat(redisTemplate.hasKey(accessKey)).isTrue();
