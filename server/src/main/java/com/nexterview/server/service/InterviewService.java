@@ -98,6 +98,15 @@ public class InterviewService {
         return InterviewDto.of(interview);
     }
 
+    public List<InterviewDto> findUserInterviews() {
+        User user = authenticatedUserContext.getUser();
+
+        return interviewRepository.findAllByUser(user)
+                .stream()
+                .map(InterviewDto::of)
+                .toList();
+    }
+
     public InterviewDto findGuestInterview(Long interviewId, InterviewPasswordRequest request) {
         Interview interview = findInterview(interviewId, InterviewType.GUEST);
         interview.validatePassword(request.password());
