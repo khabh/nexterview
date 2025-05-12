@@ -357,13 +357,10 @@ class InterviewControllerTest {
     @Test
     void 게스트_인터뷰_삭제() throws Exception {
         Long interviewId = 1L;
-        InterviewPasswordRequest request = new InterviewPasswordRequest("1234");
 
         doNothing().when(interviewService).deleteGuestInterview(any());
 
-        mockMvc.perform(delete("/api/guest-interviews/{interviewId}", interviewId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+        mockMvc.perform(delete("/api/guest-interviews/{interviewId}?password=1234", interviewId))
                 .andExpect(status().isOk());
     }
 

@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -93,8 +94,8 @@ public class InterviewController {
     }
 
     @DeleteMapping("/guest-interviews/{interviewId}")
-    public void deleteGuestInterview(@PathVariable Long interviewId, InterviewPasswordRequest request) {
-        GuestInterviewDeleteRequest deleteRequest = new GuestInterviewDeleteRequest(interviewId, request.password());
+    public void deleteGuestInterview(@PathVariable Long interviewId, @RequestParam String password) {
+        GuestInterviewDeleteRequest deleteRequest = new GuestInterviewDeleteRequest(interviewId, password);
         interviewService.deleteGuestInterview(deleteRequest);
     }
 
