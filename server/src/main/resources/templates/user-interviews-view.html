@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>내 인터뷰 목록</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic+Coding&family=Young+Serif&display=swap"
+          rel="stylesheet">
+    <link rel="stylesheet" href="/css/interview.css">
+    <script src="/js/sweetalert.js"></script>
+    <style>
+        .interview-preview-card {
+            background: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .interview-title {
+            font-weight: bold;
+            font-size: 18px;
+            color: var(--main-color);
+            margin-bottom: 10px;
+        }
+
+        .question-list {
+            list-style: none;
+            margin: 0;
+            padding-left: 10px;
+            font-family: "Nanum Gothic Coding", monospace;
+            font-size: 15px;
+        }
+
+        .question-list li {
+            margin-bottom: 6px;
+            line-height: 1.5;
+            padding-left: 5px;
+            position: relative;
+        }
+
+        .question-list .question-number {
+            font-weight: bold;
+            color: #333;
+            margin-right: 5px;
+        }
+
+        .interview-preview-card:hover {
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: box-shadow 0.3s ease;
+        }
+    </style>
+    <script>
+        async function loadUserInterviews() {
+            const response = await apiFetch("/api/user-interviews");
+            const previews = await response.json();
+
+            const container = document.getElementById("preview-list");
+            container.innerHTML = "";
+
+            previews.forEach(preview => {
+                const card = document.createElement("div");
+                card.className = "interview-preview-card";
+                card.onclick = () => {
+                    window.location.href = `/interviews/${preview.id}`;
+                };
+                card.style.cursor = "pointer";
+
+                const title = document.createElement("div");
+                title.className = "interview-title";
+                title.textContent = preview.title;
+                card.appendChild(title);
+
+                const ul = document.createElement("ul");
+                ul.className = "question-list";
+                preview.questions.forEach((q, idx) => {
+                    const li = document.createElement("li");
+                    li.innerHTML = `<span class="question-number">${idx + 1}.</span> ${q}`;
+                    ul.appendChild(li);
+                });
+                card.appendChild(ul);
+
+                container.appendChild(card);
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", loadUserInterviews);
+    </script>
+</head>
+<body>
+<div class="container">
+    <h2>내 인터뷰 목록</h2>
+    <div id="preview-list"></div>
+</div>
+</body>
+</html>
