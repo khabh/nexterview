@@ -22,6 +22,7 @@ import com.nexterview.server.service.dto.request.PromptAnswerRequest;
 import com.nexterview.server.service.dto.request.UserInterviewRequest;
 import com.nexterview.server.service.dto.response.DialogueDto;
 import com.nexterview.server.service.dto.response.InterviewDto;
+import com.nexterview.server.service.dto.response.InterviewPreviewDto;
 import com.nexterview.server.service.dto.response.InterviewTypeDto;
 import com.nexterview.server.service.dto.response.PromptAnswerDto;
 import com.nexterview.server.util.DatabaseCleaner;
@@ -242,11 +243,11 @@ class InterviewServiceTest {
         interviewFixture.getSavedUserInterview("인터뷰1", user);
         interviewFixture.getSavedUserInterview("인터뷰2", user);
 
-        List<InterviewDto> result = interviewService.findUserInterviews();
+        List<InterviewPreviewDto> result = interviewService.findUserInterviews();
 
         assertThat(result).hasSize(2);
         assertThat(result)
-                .extracting(InterviewDto::title)
+                .extracting(InterviewPreviewDto::title)
                 .containsExactlyInAnyOrder("인터뷰1", "인터뷰2");
     }
 }

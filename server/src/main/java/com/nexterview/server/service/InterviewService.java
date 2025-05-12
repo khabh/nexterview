@@ -20,6 +20,7 @@ import com.nexterview.server.service.dto.request.InterviewPasswordRequest;
 import com.nexterview.server.service.dto.request.PromptAnswerRequest;
 import com.nexterview.server.service.dto.request.UserInterviewRequest;
 import com.nexterview.server.service.dto.response.InterviewDto;
+import com.nexterview.server.service.dto.response.InterviewPreviewDto;
 import com.nexterview.server.service.dto.response.InterviewTypeDto;
 import java.util.List;
 import java.util.Map;
@@ -98,12 +99,12 @@ public class InterviewService {
         return InterviewDto.of(interview);
     }
 
-    public List<InterviewDto> findUserInterviews() {
+    public List<InterviewPreviewDto> findUserInterviews() {
         User user = authenticatedUserContext.getUser();
 
         return interviewRepository.findAllByUser(user)
                 .stream()
-                .map(InterviewDto::of)
+                .map(InterviewPreviewDto::of)
                 .toList();
     }
 

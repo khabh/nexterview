@@ -5,6 +5,7 @@ import com.nexterview.server.service.dto.request.GuestInterviewRequest;
 import com.nexterview.server.service.dto.request.InterviewPasswordRequest;
 import com.nexterview.server.service.dto.request.UserInterviewRequest;
 import com.nexterview.server.service.dto.response.InterviewDto;
+import com.nexterview.server.service.dto.response.InterviewPreviewDto;
 import com.nexterview.server.service.dto.response.InterviewTypeDto;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -51,7 +52,7 @@ public class InterviewController {
     }
 
     @GetMapping("/user-interviews")
-    public List<InterviewDto> getUserInterviews() {
+    public List<InterviewPreviewDto> getUserInterviews() {
         return interviewService.findUserInterviews();
     }
 }
