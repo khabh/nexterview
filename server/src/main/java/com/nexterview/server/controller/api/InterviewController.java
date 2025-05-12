@@ -1,6 +1,7 @@
 package com.nexterview.server.controller.api;
 
 import com.nexterview.server.service.InterviewService;
+import com.nexterview.server.service.dto.request.GuestInterviewDeleteRequest;
 import com.nexterview.server.service.dto.request.GuestInterviewRequest;
 import com.nexterview.server.service.dto.request.GuestInterviewUpdateRequest;
 import com.nexterview.server.service.dto.request.InterviewPasswordRequest;
@@ -12,6 +13,7 @@ import com.nexterview.server.service.dto.response.InterviewTypeDto;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -88,5 +90,17 @@ public class InterviewController {
                 request.dialogues()
         );
         return interviewService.updateGuestInterview(updateRequest);
+    }
+
+    @DeleteMapping("/guest-interviews/{interviewId}")
+    public void deleteGuestInterview(@PathVariable Long interviewId, InterviewPasswordRequest request) {
+        GuestInterviewDeleteRequest deleteRequest = new GuestInterviewDeleteRequest(interviewId, request.password());
+        interviewService.deleteGuestInterview(deleteRequest);
+    }
+
+
+    @DeleteMapping("/user-interviews/{interviewId}")
+    public void deleteGuestInterview(@PathVariable Long interviewId) {
+        interviewService.deleteUserInterview(interviewId);
     }
 }

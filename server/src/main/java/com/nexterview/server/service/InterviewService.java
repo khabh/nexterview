@@ -15,6 +15,7 @@ import com.nexterview.server.repository.InterviewRepository;
 import com.nexterview.server.repository.PromptQueryRepository;
 import com.nexterview.server.repository.PromptRepository;
 import com.nexterview.server.service.dto.request.DialogueRequest;
+import com.nexterview.server.service.dto.request.GuestInterviewDeleteRequest;
 import com.nexterview.server.service.dto.request.GuestInterviewRequest;
 import com.nexterview.server.service.dto.request.GuestInterviewUpdateRequest;
 import com.nexterview.server.service.dto.request.InterviewPasswordRequest;
@@ -145,6 +146,18 @@ public class InterviewService {
     public InterviewDto findGuestInterview(Long interviewId, InterviewPasswordRequest request) {
         Interview interview = findInterviewWithPassword(interviewId, request.password());
         return InterviewDto.of(interview);
+    }
+
+    @Transactional
+    public void deleteUserInterview(Long interviewId) {
+        Interview interview = findInterviewWithCurrentUser(interviewId);
+        interviewRepository.delete(interview);
+    }
+
+    @Transactional
+    public void deleteGuestInterview(GuestInterviewDeleteRequest request) {
+        Interview interview = findInterviewWithPassword(request.interviewId(), request.password());
+        interviewRepository.delete(interview);
     }
 
     private Interview findInterviewWithCurrentUser(Long interviewId) {
