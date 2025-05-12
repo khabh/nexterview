@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Update Interview</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic+Coding&family=Young+Serif&display=swap"
+          rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/interview.css">
+
+    <script src="/js/sweetalert.js"></script>
+    <script>
+        let prompts = [];
+        let interviewId;
+        let interview;
+        let interviewType;
+        let interviewPromptId;
+        let currentPromptId;
+        let answerMap;
+        let guestPassword;
+
+        document.addEventListener("DOMContentLoaded", async function () {
+            document.getElementById("delete-btn").addEventListener("click", deleteInterview);
+            interviewId = document.getElementById("interview-id").value;
+            await fetchPrompts();
+            await fetchInterview(interviewId);
+            await renderInterview(interview);
+        });
+
+        async function fetchPrompts() {
+            if (prompts.length === 0) {
+                const response = await apiFetch("/api/prompts");
+                prompts = await response.json();
+            }
+
+            const categorySelect = document.getElementById("prompt");
+            categorySelect.innerHTML = "";
+
+            prompts.forEach(prompt => {
+                const option = document.createElement("option");
+                option.value = prompt.id;
+                option.textContent = prompt.topic;
+                categorySelect.appendChild(option);
+            });
+        }
+
+        async function fetchInterview(interviewId) {
+            const response = await apiFetch(`/api/interviews/${interviewId}/type`);
+            const interviewTypeResponse = await response.json();
+            interviewType = interviewTypeResponse.interviewType;
+            if (interviewType === "USER") {
+                await fetchUserInterview(interviewId);
+            } else if (interviewType === "GUEST") {
+                await fetchGuestInterview(interviewId);
+            } else {
+                Swal.fire("알 수 없는 오류", "인터뷰 타입을 확인할 수 없습니다.", "error");
+            }
+        }
+
+        async function fetchUserInterview(interviewId) {
+            try {
+                const response = await apiFetch(`/api/user-interviews/${interviewId}`);
+                interview = await response.json();
+            } catch (error) {
+            }
+        }
+
+        async function fetchGuestInterview(interviewId) {
+            await Swal.fire({
+                title: "인터뷰 비밀번호 입력",
+                input: 'password',
+                inputPlaceholder: '비밀번호를 입력하세요',
+                showCancelButton: true,
+                confirmButtonText: "확인",
+                cancelButtonText: "취소",
+                inputValidator: (value) => {
+                    if (!value || !/^\d{4}$/.test(value)) {
+                        return '비밀번호는 숫자 네 자리를 입력해주세요.';
+                    }
+                }
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    const password = result.value;
+                    try {
+                        const response = await apiFetch(`/api/guest-interviews/${interviewId}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({password})
+                        });
+                        interview = await response.json();
+                        guestPassword = password;
+                    } catch (error) {
+                    }
+                }
+            });
+        }
+
+        async function renderInterview(interview) {
+            interviewPromptId = findCurrentPromptId(prompts, interview);
+            currentPromptId = findCurrentPromptId(prompts, interview);
+            document.getElementById("prompt").value = currentPromptId;
+            answerMap = new Map();
+            interview.promptAnswers.forEach(({promptQueryId, answer}) => {
+                answerMap.set(promptQueryId, answer);
+            });
+            currentPromptId = interviewPromptId;
+
+            document.getElementById("interview-title").value = interview.title;
+
+            renderQueries(currentPromptId);
+            document.getElementById("dialogues").innerHTML = "";
+            interview.dialogues.forEach(dialogue => {
+                const div = createDialogueElement(dialogue);
+                document.getElementById("dialogues").appendChild(div);
+            });
+        }
+
+        function findCurrentPromptId(prompts, interview) {
+            const promptQueryIds = interview.promptAnswers.map(pa => Number(pa.promptQueryId));
+
+            for (const prompt of prompts) {
+                const queryIds = prompt.queries.map(q => Number(q.id));
+                const hasMatch = promptQueryIds.some(id => queryIds.includes(id));
+                if (hasMatch) {
+                    return Number(prompt.id);
+                }
+            }
+            return 1;
+        }
+
+        function renderQueries(promptId) {
+            const queryContainer = document.getElementById("query-section");
+            queryContainer.innerHTML = "";
+            const prompt = prompts.find(prompt => prompt.id === promptId);
+            prompt.queries.forEach(query => {
+                const div = document.createElement("div");
+                div.classList.add("dynamic-input");
+
+                const label = document.createElement("label");
+                label.textContent = query.query;
+
+                const textarea = document.createElement("textarea");
+                textarea.name = `answer-${query.id}`;
+                textarea.id = `answer-${query.id}`;
+                textarea.rows = 3;
+                textarea.value = answerMap.get(query.id) || "";
+
+                div.appendChild(label);
+                div.appendChild(textarea);
+                queryContainer.appendChild(div);
+            });
+        }
+
+        function changePrompt() {
+            const promptId = Number(document.getElementById("prompt").value);
+            Swal.fire({
+                title: '프롬프트 변경 시 주의',
+                text: '수정한 내용이 모두 삭제됩니다. 계속하시겠습니까?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: '네, 변경할게요',
+                cancelButtonText: '아니오'
+            }).then((result) => {
+                if (!result.isConfirmed) {
+                    document.getElementById("prompt").value = currentPromptId;
+                    return;
+                }
+                currentPromptId = promptId;
+                renderQueries(promptId);
+            });
+        }
+
+        async function generateDialogues(event) {
+            event.preventDefault();
+
+            const promptId = document.getElementById("prompt").value;
+            const inputs = document.querySelectorAll(".dynamic-input textarea");
+
+            const promptAnswers = Array.from(inputs).map(input => ({
+                promptQueryId: input.id.split("-")[1],
+                answer: input.value
+            })).filter(answerObj => answerObj.answer !== "");
+
+            const requestData = {promptAnswers};
+            console.log(requestData);
+            const response = await apiFetch(`/api/prompts/${promptId}/dialogues`, {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(requestData)
+            });
+
+            const newDialogues = await response.json();
+            newDialogues.forEach(dialogue => {
+                const div = createDialogueElement(dialogue);
+                document.getElementById("dialogues").appendChild(div);
+            });
+        }
+
+        function createDialogueElement(dialogue) {
+            const div = document.createElement("div");
+            div.classList.add("dialogue-entry");
+
+            const questionText = document.createElement("span");
+            questionText.textContent = dialogue.question;
+            questionText.classList.add("dialogue-question-text");
+
+            const answerText = document.createElement("span");
+            answerText.textContent = dialogue.answer;
+            answerText.classList.add("dialogue-answer-text");
+
+            const questionInput = document.createElement("input");
+            questionInput.type = "text";
+            questionInput.value = dialogue.question;
+            questionInput.classList.add("dialogue-question");
+            questionInput.style.display = "none";
+
+            const answerInput = document.createElement("textarea");
+            answerInput.type = "text";
+            answerInput.value = dialogue.answer;
+            answerInput.classList.add("dialogue-answer");
+            answerInput.style.display = "none";
+            answerInput.rows = 3;
+
+            const editButton = document.createElement("button");
+            editButton.textContent = "수정";
+            editButton.type = "button";
+            editButton.onclick = () => toggleEditMode(div, true);
+
+            const completeButton = document.createElement("button");
+            completeButton.textContent = "완료";
+            completeButton.type = "button";
+            completeButton.style.display = "none";
+            completeButton.onclick = () => {
+                questionText.textContent = questionInput.value;
+                answerText.textContent = answerInput.value;
+
+                toggleEditMode(div, false);
+            };
+
+            const deleteButton = document.createElement("button");
+            deleteButton.textContent = "삭제";
+            deleteButton.type = "button";
+            deleteButton.onclick = () => {
+                div.remove();
+            };
+
+            div.appendChild(questionText);
+            div.appendChild(questionInput);
+            div.appendChild(answerText);
+            div.appendChild(answerInput);
+            div.appendChild(editButton);
+            div.appendChild(completeButton);
+            div.appendChild(deleteButton);
+
+            return div;
+        }
+
+        function toggleEditMode(div, isEditing) {
+            const questionText = div.querySelector(".dialogue-question-text");
+            const answerText = div.querySelector(".dialogue-answer-text");
+            const questionInput = div.querySelector(".dialogue-question");
+            const answerInput = div.querySelector(".dialogue-answer");
+            const editButton = div.querySelector("button:nth-child(5)");
+            const completeButton = div.querySelector("button:nth-child(6)");
+
+            if (isEditing) {
+                questionInput.style.display = "";
+                answerInput.style.display = "";
+                questionText.style.display = "none";
+                answerText.style.display = "none";
+                editButton.style.display = "none";
+                completeButton.style.display = "";
+            } else {
+                questionInput.style.display = "none";
+                answerInput.style.display = "none";
+                questionText.style.display = "";
+                answerText.style.display = "";
+                editButton.style.display = "";
+                completeButton.style.display = "none";
+            }
+        }
+
+        function addCustomDialogue() {
+            const outputDiv = document.getElementById("dialogues");
+            const dialogue = {question: "", answer: ""};
+            const dialogueDiv = createDialogueElement(dialogue);
+            toggleEditMode(dialogueDiv, true);
+            outputDiv.appendChild(dialogueDiv);
+        }
+
+        async function updateInterview(event) {
+            event.preventDefault();
+
+            const interviewTitle = document.getElementById("interview-title").value;
+            const inputs = document.querySelectorAll(".dynamic-input textarea");
+
+            const dialogueEntries = Array.from(document.querySelectorAll(".dialogue-entry"));
+            const editingDialogues = dialogueEntries
+                .filter(entry => entry.querySelector(".dialogue-question").style.display !== "none");
+            if (editingDialogues.length > 0) {
+                const result = await Swal.fire({
+                    title: "⚠️ 편집 중인 문답이 있습니다",
+                    text: "아직 편집이 완료되지 않은 문답이 있습니다. 수정 전 상태로 인터뷰를 수정하시겠습니까?",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonText: "확인",
+                    cancelButtonText: "취소"
+                });
+
+                if (!result.isConfirmed) return;
+            }
+
+            const completeDialogues = dialogueEntries.map(entry => ({
+                question: entry.querySelector(".dialogue-question-text").textContent,
+                answer: entry.querySelector(".dialogue-answer-text").textContent
+            })).filter(dialogue => dialogue.question);
+
+            const requestData = {
+                title: interviewTitle,
+                promptId: document.getElementById("prompt").value,
+                promptAnswers: Array.from(inputs).map(input => ({
+                    promptQueryId: input.id.split("-")[1],
+                    answer: input.value
+                })).filter(answerObj => answerObj.answer !== ""),
+                dialogues: completeDialogues
+            };
+
+            let url = `/api/user-interviews/${interviewId}`;
+            if (interviewType === "GUEST") {
+                requestData.guestPassword = guestPassword;
+                url = `/api/guest-interviews/${interviewId}`;
+            }
+            const response = await apiFetch(url, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(requestData)
+            });
+            const result = await response.json();
+
+            Swal.fire({
+                icon: "success",
+                title: "수정되었습니다",
+                showConfirmButton: false,
+                timer: 3000
+            });
+
+            await renderInterview(result);
+        }
+
+
+        async function deleteInterview() {
+            const confirmed = await Swal.fire({
+                title: "정말 삭제하시겠습니까?",
+                text: "삭제하면 되돌릴 수 없습니다.",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "삭제",
+                cancelButtonText: "취소"
+            });
+
+            if (!confirmed.isConfirmed) return;
+
+            const request = {method: "DELETE"};
+            let url = `/api/user-interviews/${interviewId}`;
+
+            if (interviewType === "GUEST") {
+                url = `/api/guest-interviews/${interviewId}?password=${guestPassword}`;
+            }
+            await apiFetch(url, request);
+            await Swal.fire({
+                icon: "success",
+                title: "삭제되었습니다",
+                timer: 2000,
+                showConfirmButton: false
+            });
+
+            window.location.href = "/interview/create";
+        }
+    </script>
+</head>
+<body>
+<div class="container">
+    <input type="hidden" id="interview-id" th:value="${interviewId}">
+    <form onsubmit="updateInterview(event)">
+        <div class="interview-title">
+            <label for="interview-title">인터뷰 제목</label>
+            <input type="text" id="interview-title" placeholder="인터뷰 제목을 입력해 주세요" required>
+        </div>
+
+        <div class="category-selection">
+            <label for="prompt">프롬프트 선택</label>
+            <select id="prompt" onchange="changePrompt()">
+                <option value="">프롬프트 선택</option>
+            </select>
+        </div>
+
+        <div id="input-fields" class="input-fields">
+            <label class="query-section-title">프롬프트 질문지</label>
+            <div class="query-container">
+                <div id="query-section">
+                </div>
+                <button type="button" class="right-button" onclick="generateDialogues(event)">문답 자동 생성
+                </button>
+            </div>
+        </div>
+
+        <label>질문과 답변</label>
+        <div id="output">
+            <div id="dialogues">
+            </div>
+            <button class="add-dialogue-button" type="button" onclick="addCustomDialogue()">
+                <i class="fa-solid fa-plus"></i>
+            </button>
+        </div>
+
+        <button type="submit" class="right-button">인터뷰 수정</button>
+        <button type="button" id="delete-btn" class="right-button red">삭제</button>
+    </form>
+</div>
+</body>
+</html>

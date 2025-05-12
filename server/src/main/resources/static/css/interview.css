@@ -149,7 +149,7 @@ button:hover {
     margin-right: 0;
 }
 
-label, input, textarea {
+label, input, textarea, span {
     font-family: "Nanum Gothic Coding", monospace;
     font-weight: 400;
     font-style: normal;

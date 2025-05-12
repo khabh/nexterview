@@ -1,11 +1,14 @@
 package com.nexterview.server.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.nexterview.server.domain.Dialogue;
 import com.nexterview.server.domain.Interview;
 import com.nexterview.server.domain.InterviewType;
 import com.nexterview.server.domain.Prompt;
+import com.nexterview.server.domain.PromptAnswer;
 import com.nexterview.server.domain.PromptQuery;
 import com.nexterview.server.domain.User;
 import com.nexterview.server.exception.NexterviewErrorCode;
@@ -16,10 +19,13 @@ import com.nexterview.server.repository.PromptAnswerRepository;
 import com.nexterview.server.repository.PromptQueryRepository;
 import com.nexterview.server.repository.PromptRepository;
 import com.nexterview.server.service.dto.request.DialogueRequest;
+import com.nexterview.server.service.dto.request.GuestInterviewDeleteRequest;
 import com.nexterview.server.service.dto.request.GuestInterviewRequest;
+import com.nexterview.server.service.dto.request.GuestInterviewUpdateRequest;
 import com.nexterview.server.service.dto.request.InterviewPasswordRequest;
 import com.nexterview.server.service.dto.request.PromptAnswerRequest;
 import com.nexterview.server.service.dto.request.UserInterviewRequest;
+import com.nexterview.server.service.dto.request.UserInterviewUpdateRequest;
 import com.nexterview.server.service.dto.response.DialogueDto;
 import com.nexterview.server.service.dto.response.InterviewDto;
 import com.nexterview.server.service.dto.response.InterviewPreviewDto;
@@ -249,5 +255,222 @@ class InterviewServiceTest {
         assertThat(result)
                 .extracting(InterviewPreviewDto::title)
                 .containsExactlyInAnyOrder("인터뷰1", "인터뷰2");
+    }
+
+    @Test
+    void 유저_인터뷰를_수정한다() {
+        User user = userFixture.getAuthenticatedUser("abc@naver.com", "potato", "password123");
+        Interview interview = interviewFixture.getSavedUserInterview("기존 제목", user);
+
+        Prompt prompt = new Prompt("백엔드 면접", "백엔드 관련 질문");
+        Prompt newPrompt = new Prompt("토픽", "지시문 지시문");
+        promptRepository.saveAll(List.of(prompt, newPrompt));
+
+        PromptQuery query1 = new PromptQuery("좋아하는 언어는?", prompt);
+        PromptQuery query2 = new PromptQuery("자신 있는 기술은?", prompt);
+        PromptQuery query3 = new PromptQuery("좋아하는 언어는??", newPrompt);
+        PromptQuery query4 = new PromptQuery("자신 있는 기술은??", newPrompt);
+        promptQueryRepository.saveAll(List.of(query1, query2, query3, query4));
+
+        PromptAnswer promptAnswer1 = new PromptAnswer("한국어", query1, interview);
+        PromptAnswer promptAnswer2 = new PromptAnswer("하늘보리 원샷", query2, interview);
+        promptAnswerRepository.saveAll(List.of(promptAnswer1, promptAnswer2));
+
+        Dialogue dialogue = new Dialogue("내 이름은 코난", "탐정이죠.", interview);
+        dialogueRepository.save(dialogue);
+
+        PromptAnswerRequest newAnswer1 = new PromptAnswerRequest(query3.getId(), "파이썬");
+        PromptAnswerRequest newAnswer2 = new PromptAnswerRequest(query4.getId(), "Django");
+        DialogueRequest newDialogue1 = new DialogueRequest("시가 현실적이면?", "시리얼");
+        DialogueRequest newDialogue2 = new DialogueRequest("섹시한 소금은?", "요염");
+
+        UserInterviewUpdateRequest request = new UserInterviewUpdateRequest(
+                interview.getId(),
+                "수정된 제목",
+                newPrompt.getId(),
+                List.of(newAnswer1, newAnswer2),
+                List.of(newDialogue1, newDialogue2)
+        );
+
+        InterviewDto result = interviewService.updateUserInterview(request);
+
+        assertThat(result.title()).isEqualTo("수정된 제목");
+        assertThat(result.promptAnswers()).extracting(PromptAnswerDto::answer)
+                .containsExactly("파이썬", "Django");
+        assertThat(result.dialogues()).extracting(DialogueDto::answer)
+                .containsExactly("시리얼", "요염");
+    }
+
+    @Test
+    void 게스트_인터뷰를_수정한다() {
+        Interview interview = interviewFixture.getSavedGuestInterview("기존 제목", "1234");
+
+        Prompt prompt = new Prompt("백엔드 면접", "백엔드 관련 질문");
+        Prompt newPrompt = new Prompt("토픽", "지시문 지시문");
+        promptRepository.saveAll(List.of(prompt, newPrompt));
+
+        PromptQuery query1 = new PromptQuery("좋아하는 언어는?", prompt);
+        PromptQuery query2 = new PromptQuery("자신 있는 기술은?", prompt);
+        PromptQuery query3 = new PromptQuery("좋아하는 언어는??", newPrompt);
+        PromptQuery query4 = new PromptQuery("자신 있는 기술은??", newPrompt);
+        promptQueryRepository.saveAll(List.of(query1, query2, query3, query4));
+
+        PromptAnswer promptAnswer1 = new PromptAnswer("한국어", query1, interview);
+        PromptAnswer promptAnswer2 = new PromptAnswer("하늘보리 원샷", query2, interview);
+        promptAnswerRepository.saveAll(List.of(promptAnswer1, promptAnswer2));
+
+        Dialogue dialogue = new Dialogue("내 이름은 코난", "탐정이죠.", interview);
+        dialogueRepository.save(dialogue);
+
+        PromptAnswerRequest newAnswer1 = new PromptAnswerRequest(query3.getId(), "파이썬");
+        PromptAnswerRequest newAnswer2 = new PromptAnswerRequest(query4.getId(), "Django");
+        DialogueRequest newDialogue1 = new DialogueRequest("시가 현실적이면?", "시리얼");
+        DialogueRequest newDialogue2 = new DialogueRequest("섹시한 소금은?", "요염");
+
+        GuestInterviewUpdateRequest request = new GuestInterviewUpdateRequest(
+                interview.getId(),
+                "수정된 제목",
+                newPrompt.getId(),
+                "1234",
+                List.of(newAnswer1, newAnswer2),
+                List.of(newDialogue1, newDialogue2)
+        );
+
+        InterviewDto result = interviewService.updateGuestInterview(request);
+
+        assertThat(result.title()).isEqualTo("수정된 제목");
+        assertThat(result.promptAnswers()).extracting(PromptAnswerDto::answer)
+                .containsExactly("파이썬", "Django");
+        assertThat(result.dialogues()).extracting(DialogueDto::answer)
+                .containsExactly("시리얼", "요염");
+    }
+
+    @Test
+    void 수정_시_게스트_비밀번호가_틀리면_예외를_던진다() {
+        Interview interview = interviewFixture.getSavedGuestInterview("기존 제목", "1234");
+        Prompt prompt = new Prompt("백엔드 면접", "백엔드 관련 질문");
+        promptRepository.save(prompt);
+        PromptQuery query1 = new PromptQuery("좋아하는 언어는?", prompt);
+        promptQueryRepository.save(query1);
+
+        GuestInterviewUpdateRequest request = new GuestInterviewUpdateRequest(
+                interview.getId(),
+                "수정된 제목",
+                prompt.getId(),
+                "2345",
+                List.of(new PromptAnswerRequest(query1.getId(), "파이썬")),
+                List.of(new DialogueRequest("시가 현실적이면?", "시리얼"))
+        );
+
+        assertThatCode(() -> interviewService.updateGuestInterview(request))
+                .isInstanceOf(NexterviewException.class)
+                .hasMessageContaining(NexterviewErrorCode.INTERVIEW_GUEST_PASSWORD_MISMATCH.getMessage());
+    }
+
+    @Test
+    void 다른_유저의_인터뷰를_수정하면_예외를_던진다() {
+        User other = userFixture.getSavedUser("abc@other.com", "other", "pass!!!!!!");
+        userFixture.getAuthenticatedUser("abc@naver.com", "potato", "password123");
+        Interview interview = interviewFixture.getSavedUserInterview("기존 제목", other);
+        Prompt prompt = new Prompt("백엔드 면접", "백엔드 관련 질문");
+        promptRepository.save(prompt);
+        PromptQuery query1 = new PromptQuery("좋아하는 언어는?", prompt);
+        promptQueryRepository.save(query1);
+
+        UserInterviewUpdateRequest request = new UserInterviewUpdateRequest(
+                interview.getId(),
+                "수정된 제목",
+                prompt.getId(),
+                List.of(new PromptAnswerRequest(query1.getId(), "파이썬")),
+                List.of(new DialogueRequest("시가 현실적이면?", "시리얼"))
+        );
+
+        assertThatCode(() -> interviewService.updateUserInterview(request))
+                .isInstanceOf(NexterviewException.class)
+                .hasMessageContaining(NexterviewErrorCode.INVALID_INTERVIEW_ACCESS.getMessage());
+    }
+
+    @Test
+    void 사용자_인터뷰를_삭제하면_관련_답변과_문답도_삭제된다() {
+        User user = userFixture.getAuthenticatedUser("test@gmail.com", "test", "test1234!");
+
+        Interview interview = interviewFixture.getSavedUserInterview("title", user);
+        Long interviewId = interview.getId();
+
+        Prompt prompt = new Prompt("백엔드 면접", "백엔드 관련 질문을 생성해주세요.");
+        promptRepository.save(prompt);
+
+        PromptQuery query = new PromptQuery("가장 많이 사용한 언어는?", prompt);
+        promptQueryRepository.save(query);
+
+        promptAnswerRepository.save(new PromptAnswer("answer", query, interview));
+        dialogueRepository.save(new Dialogue("question", "answer", interview));
+
+        interviewService.deleteUserInterview(interviewId);
+
+        assertThat(interviewRepository.findById(interviewId)).isEmpty();
+        assertThat(promptAnswerRepository.findAll()).isEmpty();
+        assertThat(dialogueRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    void 게스트_인터뷰를_삭제하면_관련_답변과_문답도_삭제된다() {
+        Interview interview = interviewFixture.getSavedGuestInterview();
+        Long interviewId = interview.getId();
+        String guestPassword = interview.getGuestPassword();
+
+        Prompt prompt = new Prompt("백엔드 면접", "백엔드 관련 질문을 생성해주세요.");
+        promptRepository.save(prompt);
+
+        PromptQuery query = new PromptQuery("가장 많이 사용한 언어는?", prompt);
+        promptQueryRepository.save(query);
+
+        promptAnswerRepository.save(new PromptAnswer("answer", query, interview));
+        dialogueRepository.save(new Dialogue("question", "answer", interview));
+
+        interviewService.deleteGuestInterview(
+                new GuestInterviewDeleteRequest(interviewId, guestPassword)
+        );
+
+        assertThat(interviewRepository.findById(interviewId)).isEmpty();
+        assertThat(promptAnswerRepository.findAll()).isEmpty();
+        assertThat(dialogueRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    void 다른_유저의_인터뷰를_삭제하면_예외를_던진다() {
+        User interviewOwner = userFixture.getAuthenticatedUser("owner@gmail.com", "owner", "password1!");
+        userFixture.getAuthenticatedUser("attacker@gmail.com", "attacker", "password2!");
+
+        Interview interview = interviewFixture.getSavedUserInterview("title", interviewOwner);
+        Long interviewId = interview.getId();
+
+        assertThatThrownBy(() -> interviewService.deleteUserInterview(interviewId))
+                .isInstanceOf(NexterviewException.class)
+                .hasMessageContaining(NexterviewErrorCode.INVALID_INTERVIEW_ACCESS.getMessage());
+    }
+
+    @Test
+    void 존재하지_않는_사용자_인터뷰를_삭제하면_예외를_던진다() {
+        userFixture.getAuthenticatedUser("owner@gmail.com", "owner", "password1!");
+        Long invalidInterviewId = 9999L;
+
+        assertThatThrownBy(() -> interviewService.deleteUserInterview(invalidInterviewId))
+                .isInstanceOf(NexterviewException.class)
+                .hasMessageContaining(
+                        String.format(NexterviewErrorCode.INTERVIEW_NOT_FOUND.getMessage(), invalidInterviewId));
+    }
+
+    @Test
+    void 잘못된_비밀번호로_게스트_인터뷰를_삭제하면_예외를_던진다() {
+        Interview interview = interviewFixture.getSavedGuestInterview("title", "1234");
+        Long interviewId = interview.getId();
+        String wrongPassword = "2455";
+
+        GuestInterviewDeleteRequest request = new GuestInterviewDeleteRequest(interviewId, wrongPassword);
+
+        assertThatThrownBy(() -> interviewService.deleteGuestInterview(request))
+                .isInstanceOf(NexterviewException.class)
+                .hasMessageContaining(NexterviewErrorCode.INTERVIEW_GUEST_PASSWORD_MISMATCH.getMessage());
     }
 }

@@ -20,6 +20,13 @@ public class InterviewPageController {
         return "interview-view";
     }
 
+    @GetMapping("/interviews/{interviewId}/edit")
+    public String showInterviewEditPage(@PathVariable Long interviewId, Model model) {
+        model.addAttribute("interviewId", interviewId);
+
+        return "interview-edit";
+    }
+
     @GetMapping("/interviews/me")
     public String showUserInterviewsPage() {
         return "user-interviews-view";
