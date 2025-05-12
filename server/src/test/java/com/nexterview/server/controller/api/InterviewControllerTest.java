@@ -4,6 +4,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -269,5 +270,85 @@ class InterviewControllerTest {
                 .andExpect(jsonPath("$[0].title").value("자바 인터뷰"))
                 .andExpect(jsonPath("$[1].id").value(2))
                 .andExpect(jsonPath("$[1].title").value("네트워크 인터뷰"));
+    }
+
+    @Test
+    @WithMockUser
+    void 유저_인터뷰_수정() throws Exception {
+        Long interviewId = 1L;
+        UserInterviewRequest request = new UserInterviewRequest(
+                "수정된 백엔드 인터뷰",
+                1L,
+                List.of(
+                        new PromptAnswerRequest(1L, "자바입니다"),
+                        new PromptAnswerRequest(2L, "Spring Boot")
+                ),
+                List.of(
+                        new DialogueRequest("Java의 장점은?", "객체지향적이고 플랫폼 독립적이다."),
+                        new DialogueRequest("Spring Boot의 핵심 기능은?", "자동 설정과 내장 서버 지원이다.")
+                )
+        );
+
+        InterviewDto response = new InterviewDto(
+                interviewId,
+                "수정된 백엔드 인터뷰",
+                List.of(
+                        new PromptAnswerDto(1L, 1L, "자바는 무엇인가요?", "자바입니다"),
+                        new PromptAnswerDto(2L, 2L, "스프링 부트란?", "Spring Boot")
+                ),
+                List.of(
+                        new DialogueDto(1L, "Java의 장점은?", "객체지향적이고 플랫폼 독립적이다."),
+                        new DialogueDto(2L, "Spring Boot의 핵심 기능은?", "자동 설정과 내장 서버 지원이다.")
+                )
+        );
+
+        when(interviewService.updateUserInterview(any())).thenReturn(response);
+
+        mockMvc.perform(put("/api/user-interviews/{interviewId}", interviewId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(interviewId))
+                .andExpect(jsonPath("$.title").value("수정된 백엔드 인터뷰"));
+    }
+
+    @Test
+    void 게스트_인터뷰_수정() throws Exception {
+        Long interviewId = 1L;
+        GuestInterviewRequest request = new GuestInterviewRequest(
+                "수정된 백엔드 인터뷰",
+                1L,
+                "1234",
+                List.of(
+                        new PromptAnswerRequest(1L, "자바입니다"),
+                        new PromptAnswerRequest(2L, "Spring Boot")
+                ),
+                List.of(
+                        new DialogueRequest("Java의 장점은?", "객체지향적이고 플랫폼 독립적이다."),
+                        new DialogueRequest("Spring Boot의 핵심 기능은?", "자동 설정과 내장 서버 지원이다.")
+                )
+        );
+
+        InterviewDto response = new InterviewDto(
+                interviewId,
+                "수정된 백엔드 인터뷰",
+                List.of(
+                        new PromptAnswerDto(1L, 1L, "자바는 무엇인가요?", "자바입니다"),
+                        new PromptAnswerDto(2L, 2L, "스프링 부트란?", "Spring Boot")
+                ),
+                List.of(
+                        new DialogueDto(1L, "Java의 장점은?", "객체지향적이고 플랫폼 독립적이다."),
+                        new DialogueDto(2L, "Spring Boot의 핵심 기능은?", "자동 설정과 내장 서버 지원이다.")
+                )
+        );
+
+        when(interviewService.updateGuestInterview(any())).thenReturn(response);
+
+        mockMvc.perform(put("/api/guest-interviews/{interviewId}", interviewId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(interviewId))
+                .andExpect(jsonPath("$.title").value("수정된 백엔드 인터뷰"));
     }
 }
