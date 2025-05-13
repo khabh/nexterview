@@ -1,11 +1,8 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
     <title>Interview Details</title>
-    <link rel="stylesheet" href="/css/interview.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-    <script src="/js/sweetalert.js"></script>
+    <th:block th:insert="~{fragments/head :: headContents}"/>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const interviewId = document.getElementById("interview-id").value;
@@ -91,9 +88,17 @@
                 }
             });
         }
+
+        function goToEditPage() {
+            const currentUrl = window.location.href;
+            if (!currentUrl.endsWith("/edit")) {
+                window.location.href = currentUrl.endsWith("/") ? currentUrl + "edit" : currentUrl + "/edit";
+            }
+        }
     </script>
 </head>
 <body>
+<nav th:replace="~{fragments/navbar :: nav}"></nav>
 <input type="hidden" id="interview-id" th:value="${interviewId}">
 <div class="container">
     <h2 id="interview-title">인터뷰 제목</h2>
@@ -104,6 +109,11 @@
     </div>
     <h3>질문과 답변</h3>
     <div id="dialogues"></div>
+    <div style="text-align: right; margin-top: 2rem;">
+        <button onclick="goToEditPage()" style="padding: 0.5rem 1rem; font-size: 1rem; cursor: pointer;">
+            인터뷰 수정
+        </button>
+    </div>
 </div>
 </body>
 </html>
