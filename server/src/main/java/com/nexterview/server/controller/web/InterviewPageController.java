@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 @Controller
 public class InterviewPageController {
 
-    @GetMapping("/interview/create")
+    @GetMapping("/interviews/create")
     public String showInterviewCreatePage() {
         return "interview-create";
     }

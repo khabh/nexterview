@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<nav th:fragment="nav" id="navbar" class="navbar">
+    <script>
+        const navbar = document.getElementById("navbar");
+        const authToken = localStorage.getItem("authToken");
+
+        if (authToken) {
+            navbar.innerHTML = `
+            <div class="navbar-left logo">
+                Nexterview
+            </div>
+            <div class="navbar-right">
+                <a href="/interviews/me" title="내 인터뷰 목록"><i class="fas fa-list"></i></a>
+                <a href="/interviews/create" title="새 인터뷰"><i class="fas fa-plus-circle"></i></a>
+                <button id="logout-button" title="로그아웃" style="background: none; border: none; color: white; cursor: pointer;">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        `;
+
+            document.getElementById("logout-button").addEventListener("click", () => {
+                localStorage.removeItem("authToken");
+                window.location.href = "/interviews/create";
+            });
+        } else {
+            navbar.innerHTML = `
+            <div class="navbar-left logo">
+                Nexterview
+            </div>
+            <div class="navbar-right">
+                <a href="/auth" title="로그인"><i class="fas fa-sign-in-alt"></i></a>
+            </div>
+        `;
+        }
+    </script>
+</nav>
+</body>
+</html>

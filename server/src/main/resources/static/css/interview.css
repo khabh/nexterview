@@ -9,7 +9,7 @@ body {
     font-family: Arial, sans-serif;
     background-color: #f4f4f4;
     margin: 0;
-    padding: 20px;
+    /*padding: 20px;*/
 }
 
 .container {
@@ -17,6 +17,7 @@ body {
     margin: auto;
     background: white;
     padding: 20px;
+    margin-top: 40px;
     border-radius: 10px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
@@ -157,4 +158,29 @@ label, input, textarea, span {
 
 label {
     font-weight: 700;
+}
+
+/* navbar */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: var(--main-color);
+    color: white;
+}
+
+.navbar a {
+    color: white;
+    text-decoration: none;
+    margin-left: 16px;
+}
+
+.navbar .logo {
+    font-family: 'Young Serif', serif;
+    font-size: 24px;
+}
+
+.navbar i {
+    font-size: 20px;
 }
