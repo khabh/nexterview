@@ -1,14 +1,8 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
     <title>내 인터뷰 목록</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic+Coding&family=Young+Serif&display=swap"
-          rel="stylesheet">
-    <link rel="stylesheet" href="/css/interview.css">
-    <script src="/js/sweetalert.js"></script>
+    <th:block th:insert="~{fragments/head :: headContents}"/>
     <style>
         .interview-preview-card {
             background: #fff;
@@ -47,7 +41,7 @@
         }
 
         .interview-preview-card:hover {
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             transition: box-shadow 0.3s ease;
         }
     </style>
@@ -89,6 +83,7 @@
     </script>
 </head>
 <body>
+<nav th:replace="~{fragments/navbar :: nav}"></nav>
 <div class="container">
     <h2>내 인터뷰 목록</h2>
     <div id="preview-list"></div>
