@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -32,33 +31,14 @@ public class SecurityConfig {
     private final TokenProvider tokenProvider;
 
     @Bean
-    @Order(1)
-    public SecurityFilterChain secureFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-                .securityMatcher("/api/user-interviews/**")
                 .csrf(AbstractHttpConfigurer::disable)
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(jwtAuthenticationEntryPoint)
                         .accessDeniedHandler(jwtAccessDeniedHandler))
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().authenticated())
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .headers(headers -> headers
-                        .frameOptions(FrameOptionsConfig::sameOrigin))
-                .addFilterBefore(new ExceptionHandlerFilter(), SecurityContextHolderFilter.class)
-                .addFilterBefore(new JwtFilter(tokenProvider, jwtAuthenticationEntryPoint),
-                        UsernamePasswordAuthenticationFilter.class)
-                .build();
-    }
-
-    @Bean
-    @Order(2)
-    public SecurityFilterChain publicFilterChain(HttpSecurity http) throws Exception {
-        return http
-                .securityMatcher("/**")
-                .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/user-interviews/**").authenticated()
                         .requestMatchers("/api/guest-interviews/**").permitAll()
                         .requestMatchers("/**").permitAll()
                         .requestMatchers(PathRequest.toH2Console()).permitAll()
@@ -68,6 +48,8 @@ public class SecurityConfig {
                 .headers(headers -> headers
                         .frameOptions(FrameOptionsConfig::sameOrigin))
                 .addFilterBefore(new ExceptionHandlerFilter(), SecurityContextHolderFilter.class)
+                .addFilterBefore(new JwtFilter(tokenProvider, jwtAuthenticationEntryPoint),
+                        UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 
