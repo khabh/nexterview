@@ -1,5 +1,6 @@
 package com.nexterview.server.security;
 
+import com.nexterview.server.security.exception.ExceptionHandlerFilter;
 import com.nexterview.server.security.jwt.JwtAccessDeniedHandler;
 import com.nexterview.server.security.jwt.JwtAuthenticationEntryPoint;
 import com.nexterview.server.security.jwt.JwtFilter;
@@ -7,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -18,6 +20,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.context.SecurityContextHolderFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -29,15 +32,34 @@ public class SecurityConfig {
     private final TokenProvider tokenProvider;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    @Order(1)
+    public SecurityFilterChain secureFilterChain(HttpSecurity http) throws Exception {
         return http
+                .securityMatcher("/api/user-interviews/**")
                 .csrf(AbstractHttpConfigurer::disable)
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(jwtAuthenticationEntryPoint)
                         .accessDeniedHandler(jwtAccessDeniedHandler))
                 .authorizeHttpRequests(auth -> auth
+                        .anyRequest().authenticated())
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .headers(headers -> headers
+                        .frameOptions(FrameOptionsConfig::sameOrigin))
+                .addFilterBefore(new ExceptionHandlerFilter(), SecurityContextHolderFilter.class)
+                .addFilterBefore(new JwtFilter(tokenProvider, jwtAuthenticationEntryPoint),
+                        UsernamePasswordAuthenticationFilter.class)
+                .build();
+    }
+
+    @Bean
+    @Order(2)
+    public SecurityFilterChain publicFilterChain(HttpSecurity http) throws Exception {
+        return http
+                .securityMatcher("/**")
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/guest-interviews/**").permitAll()
-                        .requestMatchers("/api/user-interviews/**").authenticated()
                         .requestMatchers("/**").permitAll()
                         .requestMatchers(PathRequest.toH2Console()).permitAll()
                         .anyRequest().authenticated())
@@ -45,8 +67,7 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .headers(headers -> headers
                         .frameOptions(FrameOptionsConfig::sameOrigin))
-                .addFilterBefore(new JwtFilter(tokenProvider, jwtAuthenticationEntryPoint),
-                        UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new ExceptionHandlerFilter(), SecurityContextHolderFilter.class)
                 .build();
     }
 
