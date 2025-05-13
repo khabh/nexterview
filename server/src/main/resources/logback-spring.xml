@@ -43,7 +43,7 @@
     </appender>
 
     <!-- 운영 환경 -->
-    <springProfile name="local-dev">
+    <springProfile name="prod">
         <root level="INFO">
             <appender-ref ref="WARN_FILE"/>
             <appender-ref ref="ERROR_FILE"/>
@@ -51,7 +51,7 @@
     </springProfile>
 
     <!-- 개발/테스트 환경 -->
-    <springProfile name="test">
+    <springProfile name="local-dev, test">
         <root level="INFO">
             <appender-ref ref="CONSOLE"/>
         </root>
