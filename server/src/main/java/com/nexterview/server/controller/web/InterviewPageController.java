@@ -31,4 +31,11 @@ public class InterviewPageController {
     public String showUserInterviewsPage() {
         return "user-interviews-view";
     }
+
+    @GetMapping("/interviews/{interviewId}/mock")
+    public String showMockInterviewPage(@PathVariable Long interviewId, Model model) {
+        model.addAttribute("interviewId", interviewId);
+
+        return "mock-interview";
+    }
 }
