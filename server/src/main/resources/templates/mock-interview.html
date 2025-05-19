@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>모의 면접</title>
+    <th:block th:insert="~{fragments/head :: headContents}"/>
+
+    <style>
+        .question-box {
+            border: 2px solid var(--main-color);
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            background-color: #ffffff;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .answer-original {
+            background: #f9f9f9;
+            padding: 12px;
+            border-left: 4px solid var(--secondary-color);
+            margin-top: 10px;
+            font-style: italic;
+            color: #555;
+            border-radius: 5px;
+            margin-left: 15px;
+        }
+
+        .section {
+            margin-top: 30px;
+        }
+
+        .section h3 {
+            margin-bottom: 10px;
+            margin-top: 5px;
+        }
+
+        .text-answer, .audio-answer {
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 10px;
+            background-color: #fafafa;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            margin-top: 10px;
+            resize: vertical;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 14px;
+        }
+
+        .controls {
+            margin-top: 10px;
+        }
+
+        .controls button {
+            margin: 4px;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .status {
+            margin-top: 15px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .navigation {
+            margin-top: 40px;
+            text-align: center;
+        }
+
+        .navigation button {
+            padding: 13px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        audio {
+            display: block;
+            margin-top: 12px;
+        }
+
+        .dots {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .dot {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            margin: 0 5px;
+            border-radius: 50%;
+            background-color: #ccc;
+            transition: background-color 0.3s;
+        }
+
+        .dot.active {
+            background-color: var(--main-color);
+        }
+
+        .btn-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        #toggleAnswerBtn {
+            margin-top: 10px;
+            background: none;
+            border: none;
+            color: black;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            padding: 10px 5px;
+        }
+
+        #toggleAnswerBtn:hover {
+            text-decoration: underline;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #saveBtn {
+            margin-right: 0;
+            margin-left: auto;
+            padding: 13px 20px;
+            font-size: 16px;
+        }
+
+        #saveBar {
+            display: flex;
+        }
+    </style>
+</head>
+<body>
+<nav th:replace="~{fragments/navbar :: nav}"></nav>
+<input type="hidden" id="interview-id" th:value="${interviewId}">
+<div class="container">
+    <h1 id="interviewTitle">제목 로딩 중...</h1>
+    <div id="questionContainer" class="question-box">
+        <h2 id="questionTitle">질문 로딩 중...</h2>
+        <button id="toggleAnswerBtn">작성했던 답변 보기</button>
+        <div id="originalAnswer" class="answer-original hidden"></div>
+
+        <!-- 텍스트 입력 구역 -->
+        <div class="section text-answer">
+            <h3>📝 텍스트로 답변</h3>
+            <textarea id="userAnswerInput" placeholder="답변을 작성하거나 음성으로 입력하세요."></textarea>
+        </div>
+
+        <!-- 음성 녹음 구역 -->
+        <div class="section audio-answer">
+            <h3>🎤 음성으로 답변</h3>
+            <div class="controls">
+                <button id="startBtn">🔴 녹음 시작</button>
+                <button id="pauseBtn" class="hidden">⏸️ 일시정지</button>
+                <button id="resumeBtn" class="hidden">▶️ 재개</button>
+                <button id="stopBtn" class="hidden">⏹️ 녹음 완료</button>
+                <button id="deleteAudioBtn" class="hidden">🗑️ 녹음 삭제</button>
+                <div class="status" id="status">상태: 대기 중</div>
+                <audio id="audioPlayer" controls></audio>
+            </div>
+        </div>
+
+        <div class="navigation">
+            <div class="btn-container">
+                <button id="prevBtn">⬅ 이전 질문</button>
+                <button id="nextBtn">다음 질문 ➡</button>
+            </div>
+            <div class="dots" id="dotsContainer"></div>
+
+        </div>
+    </div>
+    <div id="saveBar">
+        <button id="saveBtn" class="btn-primary">모의 면접 저장</button>
+    </div>
+</div>
+<script type="module">
+    let interviewTitle;
+    let dialogues;
+    let userAnswers;
+    let currentIndex = 0;
+    let stream = null;
+
+    async function main() {
+        const interviewId = document.getElementById("interview-id").value;
+        const interview = await fetchInterviewType(interviewId);
+        if (!interview) {
+            Swal.fire("인터뷰를 불러오지 못했습니다.", "다시 시도해주세요.", "error");
+            return;
+        }
+
+        interviewTitle = interview.title;
+        dialogues = interview.dialogues;
+
+        userAnswers = dialogues.map(() => ({
+            text: '',
+            audioBlob: null,
+            mediaRecorder: null,
+            audioChunks: []
+        }));
+
+        document.getElementById("interviewTitle").textContent = interviewTitle;
+        await showQuestion(currentIndex);
+    }
+
+    async function fetchInterviewType(interviewId) {
+        try {
+            const response = await apiFetch(`/api/interviews/${interviewId}/type`);
+            const interviewType = await response.json();
+
+            if (interviewType.interviewType === "USER") {
+                return await fetchInterview(interviewId);
+            } else if (interviewType.interviewType === "GUEST") {
+                return await showPasswordModal(interviewId);
+            } else {
+                Swal.fire("알 수 없는 오류", "인터뷰 타입을 확인할 수 없습니다.", "error");
+                return null;
+            }
+        } catch (error) {
+            Swal.fire("인터뷰 타입을 불러오지 못했습니다.", "다시 시도해주세요.", "error");
+            return null;
+        }
+    }
+
+    async function fetchInterview(interviewId) {
+        try {
+            const response = await apiFetch(`/api/user-interviews/${interviewId}`);
+            return await response.json();
+        } catch (error) {
+            Swal.fire("인터뷰 데이터를 불러오지 못했습니다.", "", "error");
+            return null;
+        }
+    }
+
+    async function showPasswordModal(interviewId) {
+        const result = await Swal.fire({
+            title: "인터뷰 비밀번호 입력",
+            input: 'password',
+            inputPlaceholder: '비밀번호를 입력하세요',
+            showCancelButton: true,
+            confirmButtonText: "확인",
+            cancelButtonText: "취소",
+            inputValidator: (value) => {
+                if (!value || !/^\d{4}$/.test(value)) {
+                    return '비밀번호는 숫자 네 자리를 입력해주세요.';
+                }
+            }
+        });
+
+        if (!result.isConfirmed) return null;
+
+        const password = result.value;
+
+        try {
+            const response = await apiFetch(`/api/guest-interviews/${interviewId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({password})
+            });
+
+            if (!response.ok) throw new Error('응답 실패');
+            return await response.json();
+        } catch (err) {
+            Swal.fire("인터뷰 조회 실패", "비밀번호가 틀렸거나 접근할 수 없습니다.", "error");
+            return null;
+        }
+    }
+
+    const questionTitle = document.getElementById("questionTitle");
+    const originalAnswer = document.getElementById("originalAnswer");
+    const toggleAnswerBtn = document.getElementById("toggleAnswerBtn");
+    const userAnswerInput = document.getElementById("userAnswerInput");
+
+    const startBtn = document.getElementById("startBtn");
+    const pauseBtn = document.getElementById("pauseBtn");
+    const resumeBtn = document.getElementById("resumeBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const deleteAudioBtn = document.getElementById("deleteAudioBtn");
+    const status = document.getElementById("status");
+    const audioPlayer = document.getElementById("audioPlayer");
+
+    async function setupStream() {
+        if (!stream) {
+            stream = await navigator.mediaDevices.getUserMedia({audio: true});
+        }
+    }
+
+    function resetRecordingUI() {
+        startBtn.classList.remove("hidden");
+        pauseBtn.classList.add("hidden");
+        resumeBtn.classList.add("hidden");
+        stopBtn.classList.add("hidden");
+        deleteAudioBtn.classList.add("hidden");
+        updateStatus("대기 중");
+    }
+
+    function updateStatus(text) {
+        status.textContent = `상태: ${text}`;
+    }
+
+    function setupMediaRecorderForIndex(index) {
+        if (userAnswers[index].mediaRecorder) {
+            return;
+        }
+
+        userAnswers[index].audioChunks = [];
+        userAnswers[index].mediaRecorder = new MediaRecorder(stream);
+
+        userAnswers[index].mediaRecorder.ondataavailable = (event) => {
+            userAnswers[index].audioChunks.push(event.data);
+        };
+
+        userAnswers[index].mediaRecorder.onstop = () => {
+            const audioBlob = new Blob(userAnswers[index].audioChunks, {type: 'audio/webm'});
+            userAnswers[index].audioBlob = audioBlob;
+            if (index === currentIndex) {
+                audioPlayer.src = URL.createObjectURL(audioBlob);
+                audioPlayer.classList.remove("hidden");
+                deleteAudioBtn.classList.remove("hidden");
+            }
+            updateStatus("녹음 완료");
+            startBtn.textContent = "🔁 다시 녹음";
+            startBtn.classList.remove("hidden");
+            pauseBtn.classList.add("hidden");
+            resumeBtn.classList.add("hidden");
+            stopBtn.classList.add("hidden");
+        };
+    }
+
+    startBtn.addEventListener("click", async () => {
+        await setupStream();
+        setupMediaRecorderForIndex(currentIndex);
+
+        if (userAnswers[currentIndex].mediaRecorder.state !== "inactive") {
+            userAnswers[currentIndex].mediaRecorder.stop();
+            userAnswers[currentIndex].audioChunks = [];
+        }
+
+        userAnswers[currentIndex].audioChunks = [];
+        userAnswers[currentIndex].mediaRecorder.start();
+
+        updateStatus("녹음 중");
+        startBtn.classList.add("hidden");
+        pauseBtn.classList.remove("hidden");
+        stopBtn.classList.remove("hidden");
+        deleteAudioBtn.classList.add("hidden");
+    });
+
+    pauseBtn.addEventListener("click", () => {
+        const mr = userAnswers[currentIndex].mediaRecorder;
+        if (mr && mr.state === "recording") {
+            mr.pause();
+            updateStatus("일시정지됨");
+            pauseBtn.classList.add("hidden");
+            resumeBtn.classList.remove("hidden");
+        }
+    });
+
+    resumeBtn.addEventListener("click", () => {
+        const mr = userAnswers[currentIndex].mediaRecorder;
+        if (mr && mr.state === "paused") {
+            mr.resume();
+            updateStatus("녹음 중");
+            resumeBtn.classList.add("hidden");
+            pauseBtn.classList.remove("hidden");
+        }
+    });
+
+    stopBtn.addEventListener("click", () => {
+        const mr = userAnswers[currentIndex].mediaRecorder;
+        if (mr && mr.state !== "inactive") {
+            mr.stop();
+        }
+    });
+
+    deleteAudioBtn.addEventListener("click", () => {
+        userAnswers[currentIndex].audioBlob = null;
+        userAnswers[currentIndex].audioChunks = [];
+        userAnswers[currentIndex].mediaRecorder = null;
+        audioPlayer.src = "";
+        audioPlayer.classList.add("hidden");
+        deleteAudioBtn.classList.add("hidden");
+        updateStatus("대기 중");
+        startBtn.textContent = "🔴 녹음 시작";
+        startBtn.classList.remove("hidden");
+    });
+
+    async function stopCurrentRecording() {
+        const mr = userAnswers[currentIndex].mediaRecorder;
+        if (mr && mr.state !== "inactive") {
+            return new Promise(resolve => {
+                mr.onstop = () => {
+                    const audioBlob = new Blob(userAnswers[currentIndex].audioChunks, {type: 'audio/webm'});
+                    userAnswers[currentIndex].audioBlob = audioBlob;
+                    resolve();
+                };
+                mr.stop();
+            });
+        }
+    }
+
+    async function showQuestion(index) {
+        await stopCurrentRecording();
+        saveCurrentAnswer();
+
+        currentIndex = index;
+        const dialogue = dialogues[currentIndex];
+
+        questionTitle.textContent = `Q${currentIndex + 1}. ${dialogue.question}`;
+        originalAnswer.textContent = dialogue.answer;
+        originalAnswer.classList.add("hidden");
+        toggleAnswerBtn.textContent = "▶︎ 작성했던 답변 보기";
+
+        userAnswerInput.value = userAnswers[currentIndex].text || "";
+
+        resetRecordingUI();
+
+        if (userAnswers[currentIndex].audioBlob) {
+            audioPlayer.src = URL.createObjectURL(userAnswers[currentIndex].audioBlob);
+            audioPlayer.classList.remove("hidden");
+            deleteAudioBtn.classList.remove("hidden");
+            startBtn.textContent = "🔁 다시 녹음";
+            updateStatus("녹음 완료");
+        } else {
+            audioPlayer.src = "";
+            audioPlayer.classList.add("hidden");
+            deleteAudioBtn.classList.add("hidden");
+            startBtn.textContent = "🔴 녹음 시작";
+            updateStatus("대기 중");
+        }
+
+        updateDots(currentIndex);
+    }
+
+    toggleAnswerBtn.addEventListener("click", () => {
+        originalAnswer.classList.toggle("hidden");
+        toggleAnswerBtn.textContent = originalAnswer.classList.contains("hidden")
+            ? "▶︎ 작성했던 답변 보기"
+            : "▼ 작성했던 답변 숨기기";
+    });
+
+    document.getElementById("nextBtn").addEventListener("click", async () => {
+        if (currentIndex < dialogues.length - 1) {
+            await showQuestion(currentIndex + 1);
+        }
+    });
+
+    document.getElementById("prevBtn").addEventListener("click", async () => {
+        if (currentIndex > 0) {
+            await showQuestion(currentIndex - 1);
+        }
+    });
+
+    function saveCurrentAnswer() {
+        userAnswers[currentIndex].text = userAnswerInput.value;
+    }
+
+    function updateDots(index) {
+        const dotsContainer = document.getElementById("dotsContainer");
+        dotsContainer.innerHTML = '';
+        for (let i = 0; i < dialogues.length; i++) {
+            const dot = document.createElement('span');
+            dot.classList.add('dot');
+            if (i === index) dot.classList.add('active');
+            dotsContainer.appendChild(dot);
+        }
+    }
+
+    document.getElementById("saveBtn").addEventListener("click", async () => {
+        await stopCurrentRecording();
+        saveCurrentAnswer();
+
+        const formData = new FormData();
+        formData.append("title", interviewTitle);
+
+        userAnswers.forEach((answer, idx) => {
+            formData.append(`textAnswers[${idx}]`, answer.text || "");
+            if (answer.audioBlob) {
+                formData.append(`audioFiles`, answer.audioBlob, `question${idx + 1}.webm`);
+            }
+        });
+
+        for (const pair of formData.entries()) {
+            console.log(pair[0] + ':', pair[1]);
+        }
+    });
+
+    document.addEventListener("DOMContentLoaded", main);
+</script>
+</body>
+</html>
